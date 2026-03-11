@@ -5,9 +5,9 @@ export default () => ({
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/p90',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'jwt-secret',
+    secret: process.env.JWT_SECRET,
     expiration: process.env.JWT_EXPIRATION || '15m',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'jwt-refresh-secret',
+    refreshSecret: process.env.JWT_REFRESH_SECRET,
     refreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
   },
   upload: {
@@ -22,7 +22,7 @@ export default () => ({
   },
   admin: {
     email: process.env.ADMIN_EMAIL || 'admin@p90.com',
-    password: process.env.ADMIN_PASSWORD || 'Admin@123456',
+    password: process.env.ADMIN_PASSWORD,
     name: process.env.ADMIN_NAME || 'Lara',
   },
 });

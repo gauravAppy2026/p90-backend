@@ -36,6 +36,7 @@ export class ResourcesService {
   }
 
   async delete(id: string): Promise<void> {
-    await this.resourceModel.findByIdAndDelete(id);
+    const resource = await this.resourceModel.findByIdAndDelete(id);
+    if (!resource) throw new NotFoundException('Resource not found');
   }
 }

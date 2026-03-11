@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -75,6 +75,7 @@ export class TrackerService {
   }
 
   async deleteCategory(id: string): Promise<void> {
-    await this.categoryModel.findByIdAndDelete(id);
+    const category = await this.categoryModel.findByIdAndDelete(id);
+    if (!category) throw new NotFoundException('Category not found');
   }
 }

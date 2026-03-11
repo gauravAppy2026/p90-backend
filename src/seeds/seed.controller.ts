@@ -1,11 +1,16 @@
-import { Controller, Post, Get } from '@nestjs/common';
+import { Controller, Post, Get, UseGuards } from '@nestjs/common';
 import { UsersService } from '../modules/users/users.service';
 import { ProgramService } from '../modules/program/program.service';
 import { UserRole } from '../modules/users/schemas/user.schema';
 import { ConfigService } from '@nestjs/config';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import * as bcrypt from 'bcrypt';
 
 @Controller('api/seed')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 export class SeedController {
   constructor(
     private usersService: UsersService,
