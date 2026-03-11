@@ -6,6 +6,14 @@ import {
   UserProgressSchema,
 } from '../program/schemas/user-progress.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import {
+  Question,
+  QuestionSchema,
+} from '../questions/schemas/question.schema';
+import {
+  Testimonial,
+  TestimonialSchema,
+} from '../testimonials/schemas/testimonial.schema';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsController } from './analytics.controller';
 
@@ -15,6 +23,8 @@ import { AnalyticsController } from './analytics.controller';
       { name: ClickEvent.name, schema: ClickEventSchema },
       { name: UserProgress.name, schema: UserProgressSchema },
       { name: User.name, schema: UserSchema },
+      { name: Question.name, schema: QuestionSchema },
+      { name: Testimonial.name, schema: TestimonialSchema },
     ]),
   ],
   controllers: [AnalyticsController],

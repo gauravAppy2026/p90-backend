@@ -7,6 +7,14 @@ import {
   UserProgressDocument,
 } from '../program/schemas/user-progress.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import {
+  Question,
+  QuestionDocument,
+} from '../questions/schemas/question.schema';
+import {
+  Testimonial,
+  TestimonialDocument,
+} from '../testimonials/schemas/testimonial.schema';
 
 @Injectable()
 export class AnalyticsService {
@@ -17,6 +25,10 @@ export class AnalyticsService {
     private progressModel: Model<UserProgressDocument>,
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
+    @InjectModel(Question.name)
+    private questionModel: Model<QuestionDocument>,
+    @InjectModel(Testimonial.name)
+    private testimonialModel: Model<TestimonialDocument>,
   ) {}
 
   async trackClick(
@@ -37,7 +49,7 @@ export class AnalyticsService {
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const activeUsers = await this.userModel.countDocuments({
+    const activeUsersThisWeek = await this.userModel.countDocuments({
       isActive: true,
       role: 'user',
       updatedAt: { $gte: weekAgo },
@@ -53,19 +65,21 @@ export class AnalyticsService {
       },
     ]);
 
-    const retreatVisits = await this.clickEventModel.countDocuments({
-      eventType: 'retreat_visit',
-    });
-
-    const productClicks = await this.clickEventModel.countDocuments({
-      eventType: 'product_click',
-    });
+    const [pendingQuestions, pendingTestimonials, retreatVisits, productClicks] =
+      await Promise.all([
+        this.questionModel.countDocuments({ status: 'pending' }),
+        this.testimonialModel.countDocuments({ status: 'pending' }),
+        this.clickEventModel.countDocuments({ eventType: 'retreat_visit' }),
+        this.clickEventModel.countDocuments({ eventType: 'product_click' }),
+      ]);
 
     return {
       totalUsers,
-      activeUsers,
-      avgCompletion: completionStats[0]?.avgCompletion || 0,
+      activeUsersThisWeek,
+      avgCompletionPercentage: completionStats[0]?.avgCompletion || 0,
       totalStarted: completionStats[0]?.totalStarted || 0,
+      pendingQuestions,
+      pendingTestimonials,
       retreatVisits,
       productClicks,
       retreatInterestRate:

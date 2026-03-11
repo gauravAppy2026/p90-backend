@@ -4,6 +4,8 @@ import { getModelToken } from '@nestjs/mongoose';
 import { ClickEvent } from './schemas/click-event.schema';
 import { UserProgress } from '../program/schemas/user-progress.schema';
 import { User } from '../users/schemas/user.schema';
+import { Question } from '../questions/schemas/question.schema';
+import { Testimonial } from '../testimonials/schemas/testimonial.schema';
 import { Types } from 'mongoose';
 
 const userId = new Types.ObjectId().toString();
@@ -13,6 +15,8 @@ describe('AnalyticsService', () => {
   let clickModel: any;
   let progressModel: any;
   let userModel: any;
+  let questionModel: any;
+  let testimonialModel: any;
 
   beforeEach(async () => {
     clickModel = {
@@ -31,6 +35,12 @@ describe('AnalyticsService', () => {
       countDocuments: jest.fn().mockResolvedValue(0),
       find: jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue([]) }),
     };
+    questionModel = {
+      countDocuments: jest.fn().mockResolvedValue(0),
+    };
+    testimonialModel = {
+      countDocuments: jest.fn().mockResolvedValue(0),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +48,8 @@ describe('AnalyticsService', () => {
         { provide: getModelToken(ClickEvent.name), useValue: clickModel },
         { provide: getModelToken(UserProgress.name), useValue: progressModel },
         { provide: getModelToken(User.name), useValue: userModel },
+        { provide: getModelToken(Question.name), useValue: questionModel },
+        { provide: getModelToken(Testimonial.name), useValue: testimonialModel },
       ],
     }).compile();
 
