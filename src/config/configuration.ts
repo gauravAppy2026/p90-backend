@@ -11,8 +11,14 @@ export default () => ({
     refreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
   },
   upload: {
-    dir: process.env.UPLOAD_DIR || './uploads',
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE ?? '5242880', 10),
+  },
+  r2: {
+    endpoint: process.env.R2_ENDPOINT || '',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    bucketName: process.env.R2_BUCKET_NAME || 'p90-uploads',
+    publicUrl: process.env.R2_PUBLIC_URL || '',
   },
   admin: {
     email: process.env.ADMIN_EMAIL || 'admin@p90.com',

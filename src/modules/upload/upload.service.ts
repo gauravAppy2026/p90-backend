@@ -1,17 +1,26 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import * as path from 'path';
 
 @Injectable()
 export class UploadService {
-  private uploadDir: string;
+  private s3Client: S3Client;
+  private bucketName: string;
+  private publicUrl: string;
 
   constructor(private configService: ConfigService) {
-    this.uploadDir = this.configService.get('upload.dir') || './uploads';
-    if (!fs.existsSync(this.uploadDir)) {
-      fs.mkdirSync(this.uploadDir, { recursive: true });
-    }
+    this.bucketName = this.configService.get('r2.bucketName') || 'p90-uploads';
+    this.publicUrl = this.configService.get('r2.publicUrl') || '';
+
+    this.s3Client = new S3Client({
+      region: 'auto',
+      endpoint: this.configService.get('r2.endpoint') || '',
+      credentials: {
+        accessKeyId: this.configService.get('r2.accessKeyId') || '',
+        secretAccessKey: this.configService.get('r2.secretAccessKey') || '',
+      },
+    });
   }
 
   async uploadFile(
@@ -23,12 +32,18 @@ export class UploadService {
 
     const ext = path.extname(file.originalname);
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}${ext}`;
-    const filePath = path.join(this.uploadDir, fileName);
 
-    fs.writeFileSync(filePath, file.buffer);
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: fileName,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }),
+    );
 
     return {
-      fileUrl: `/uploads/${fileName}`,
+      fileUrl: `${this.publicUrl}/${fileName}`,
       fileName: file.originalname,
     };
   }
