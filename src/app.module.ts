@@ -17,6 +17,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { RetreatModule } from './modules/retreat/retreat.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { SeedModule } from './seeds/seed.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { UploadModule } from './modules/upload/upload.module';
     RetreatModule,
     AnalyticsModule,
     UploadModule,
+    SeedModule,
   ],
 })
 export class AppModule {}
