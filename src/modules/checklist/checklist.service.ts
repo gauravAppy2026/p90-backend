@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
   DailyChecklist,
   DailyChecklistDocument,
 } from './schemas/daily-checklist.schema';
+import {
+  ChecklistConfig,
+  ChecklistConfigDocument,
+} from './schemas/checklist-config.schema';
 import { getLocalDate } from '../../common/utils/timezone.util';
 
 @Injectable()
@@ -12,6 +16,8 @@ export class ChecklistService {
   constructor(
     @InjectModel(DailyChecklist.name)
     private checklistModel: Model<DailyChecklistDocument>,
+    @InjectModel(ChecklistConfig.name)
+    private configModel: Model<ChecklistConfigDocument>,
   ) {}
 
   async getToday(userId: string, timezone?: string): Promise<DailyChecklistDocument | null> {
@@ -53,5 +59,28 @@ export class ChecklistService {
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ date: -1 })
       .limit(limit);
+  }
+
+  // --- Checklist Config (Admin) ---
+
+  async getActiveConfig(): Promise<ChecklistConfigDocument[]> {
+    return this.configModel.find({ isActive: true }).sort({ order: 1 });
+  }
+
+  async getAllConfig(): Promise<ChecklistConfigDocument[]> {
+    return this.configModel.find().sort({ order: 1 });
+  }
+
+  async createConfig(data: Partial<ChecklistConfig>): Promise<ChecklistConfigDocument> {
+    return this.configModel.create(data);
+  }
+
+  async updateConfig(id: string, data: Partial<ChecklistConfig>): Promise<ChecklistConfigDocument | null> {
+    return this.configModel.findByIdAndUpdate(id, data, { new: true });
+  }
+
+  async deleteConfig(id: string): Promise<void> {
+    const config = await this.configModel.findByIdAndDelete(id);
+    if (!config) throw new NotFoundException('Checklist item not found');
   }
 }
