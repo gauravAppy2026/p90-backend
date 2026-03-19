@@ -15,12 +15,20 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ProgramService } from '../program/program.service';
+import { TrackerService } from '../tracker/tracker.service';
+import { ChecklistService } from '../checklist/checklist.service';
 
 @Controller('api/admin/users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private programService: ProgramService,
+    private trackerService: TrackerService,
+    private checklistService: ChecklistService,
+  ) {}
 
   @Get()
   async findAll(
@@ -65,6 +73,22 @@ export class UsersController {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=users.csv');
     res.send(csv);
+  }
+
+  @Get(':id/progress')
+  async getUserProgress(@Param('id') id: string) {
+    const [user, progress, trackerHistory, checklistHistory] = await Promise.all([
+      this.usersService.findById(id),
+      this.programService.getProgress(id),
+      this.trackerService.getHistory(id, 30),
+      this.checklistService.getHistory(id, 30),
+    ]);
+    return {
+      user: user ? { name: user.name, email: user.email, role: user.role } : null,
+      progress,
+      trackerHistory,
+      checklistHistory,
+    };
   }
 
   @Get(':id')
