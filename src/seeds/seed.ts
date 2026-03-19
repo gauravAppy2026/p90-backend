@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { UsersService } from '../modules/users/users.service';
 import { ProgramService } from '../modules/program/program.service';
+import { ChecklistService } from '../modules/checklist/checklist.service';
 import { UserRole } from '../modules/users/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -10,6 +11,7 @@ async function seed() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const usersService = app.get(UsersService);
   const programService = app.get(ProgramService);
+  const checklistService = app.get(ChecklistService);
   const configService = app.get(ConfigService);
 
   // 1. Create admin user
@@ -73,6 +75,25 @@ async function seed() {
       console.log(`Created placeholder for Day ${day}`);
     } catch (e) {
       console.log(`Day ${day} already exists`);
+    }
+  }
+
+  // 3. Seed checklist config items
+  const checklistItems = [
+    { key: 'p90Session', label: 'P90 Session', description: 'Complete your daily device session', icon: 'flash-outline', order: 1 },
+    { key: 'morningSmoothie', label: 'Morning Smoothie', description: 'Nutrient-packed start to your day', icon: 'cafe-outline', order: 2 },
+    { key: 'waterIntake', label: 'Water Intake', description: 'Stay hydrated throughout the day', icon: 'water-outline', order: 3 },
+    { key: 'vitaminsMinerals', label: 'Vitamins & Minerals', description: 'Take your daily supplements', icon: 'medical-outline', order: 4 },
+    { key: 'movement', label: 'Movement', description: '30 minutes of gentle movement', icon: 'walk-outline', order: 5 },
+    { key: 'mindfulness', label: 'Mindfulness', description: '10 minutes of meditation or breathwork', icon: 'leaf-outline', order: 6 },
+  ];
+
+  for (const item of checklistItems) {
+    try {
+      await checklistService.createConfig({ ...item, isActive: true });
+      console.log(`Created checklist item: ${item.label}`);
+    } catch (e) {
+      console.log(`Checklist item "${item.label}" already exists`);
     }
   }
 
