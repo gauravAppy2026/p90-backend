@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -6,6 +6,7 @@ import {
   UserProgressDocument,
 } from './schemas/user-progress.schema';
 import { DayContent, DayContentDocument } from './schemas/day-content.schema';
+import { getLocalDate } from '../../common/utils/timezone.util';
 
 @Injectable()
 export class ProgramService {
@@ -18,8 +19,17 @@ export class ProgramService {
 
   // --- User Progress ---
 
-  async getProgress(userId: string): Promise<UserProgressDocument | null> {
-    return this.progressModel.findOne({ userId: new Types.ObjectId(userId) });
+  async getProgress(userId: string, timezone?: string) {
+    const progress = await this.progressModel.findOne({ userId: new Types.ObjectId(userId) });
+    if (!progress) return null;
+
+    const today = getLocalDate(timezone);
+    const canCompleteLesson = progress.lastLessonCompletedDate !== today;
+
+    return {
+      ...progress.toObject(),
+      canCompleteLesson,
+    };
   }
 
   async startProgram(userId: string): Promise<UserProgressDocument> {
@@ -41,11 +51,20 @@ export class ProgramService {
     });
   }
 
-  async completeDay(userId: string): Promise<UserProgressDocument> {
+  async completeDay(userId: string, timezone?: string): Promise<UserProgressDocument> {
     const progress = await this.progressModel.findOne({
       userId: new Types.ObjectId(userId),
     });
     if (!progress) throw new NotFoundException('Progress not found');
+
+    const today = getLocalDate(timezone);
+
+    // One-lesson-per-day restriction
+    if (progress.lastLessonCompletedDate === today) {
+      throw new ConflictException(
+        'You have already completed today\'s lesson. Next lesson available tomorrow.',
+      );
+    }
 
     const currentDay = progress.currentDay;
     if (!progress.completedLessons.includes(currentDay)) {
@@ -60,15 +79,16 @@ export class ProgramService {
       (progress.completedLessons.length / 30) * 100,
     );
     progress.lastActiveDate = new Date();
+    progress.lastLessonCompletedDate = today;
 
     // Calculate streak
-    const today = new Date();
     const lastActive = progress.lastActiveDate
       ? new Date(progress.lastActiveDate)
       : null;
     if (lastActive) {
+      const nowMs = new Date().getTime();
       const diffDays = Math.floor(
-        (today.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24),
+        (nowMs - lastActive.getTime()) / (1000 * 60 * 60 * 24),
       );
       if (diffDays <= 1) {
         progress.streakCount = (progress.streakCount || 0) + 1;

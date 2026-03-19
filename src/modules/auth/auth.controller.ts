@@ -60,4 +60,18 @@ export class AuthController {
   recordConsent(@CurrentUser('_id') userId: string) {
     return this.authService.recordConsent(userId);
   }
+
+  @Post('forgot-password')
+  forgotPassword(@Body('email') email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  @Post('reset-password')
+  resetPassword(
+    @Body('email') email: string,
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.authService.resetPassword(email, token, newPassword);
+  }
 }

@@ -9,6 +9,7 @@ import {
   TrackerCategory,
   TrackerCategoryDocument,
 } from './schemas/tracker-category.schema';
+import { getLocalDate } from '../../common/utils/timezone.util';
 
 @Injectable()
 export class TrackerService {
@@ -19,8 +20,8 @@ export class TrackerService {
     private categoryModel: Model<TrackerCategoryDocument>,
   ) {}
 
-  async getToday(userId: string): Promise<DailyTrackerDocument | null> {
-    const today = new Date().toISOString().split('T')[0];
+  async getToday(userId: string, timezone?: string): Promise<DailyTrackerDocument | null> {
+    const today = getLocalDate(timezone);
     return this.trackerModel.findOne({
       userId: new Types.ObjectId(userId),
       date: today,
@@ -30,8 +31,9 @@ export class TrackerService {
   async updateToday(
     userId: string,
     data: Partial<DailyTracker>,
+    timezone?: string,
   ): Promise<DailyTrackerDocument> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDate(timezone);
     return this.trackerModel.findOneAndUpdate(
       { userId: new Types.ObjectId(userId), date: today },
       { ...data, userId: new Types.ObjectId(userId), date: today },

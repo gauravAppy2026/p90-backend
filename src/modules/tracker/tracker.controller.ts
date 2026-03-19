@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Timezone } from '../../common/decorators/timezone.decorator';
 import { TrackerService } from './tracker.service';
 import { UpdateTrackerDto } from './dto/update-tracker.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -26,14 +27,14 @@ export class TrackerController {
 
   @Get('tracker/today')
   @UseGuards(JwtAuthGuard)
-  getToday(@CurrentUser('_id') userId: string) {
-    return this.trackerService.getToday(userId);
+  getToday(@CurrentUser('_id') userId: string, @Timezone() timezone: string) {
+    return this.trackerService.getToday(userId, timezone);
   }
 
   @Put('tracker/today')
   @UseGuards(JwtAuthGuard)
-  updateToday(@CurrentUser('_id') userId: string, @Body() body: UpdateTrackerDto) {
-    return this.trackerService.updateToday(userId, body as any);
+  updateToday(@CurrentUser('_id') userId: string, @Body() body: UpdateTrackerDto, @Timezone() timezone: string) {
+    return this.trackerService.updateToday(userId, body as any, timezone);
   }
 
   @Get('tracker/history')

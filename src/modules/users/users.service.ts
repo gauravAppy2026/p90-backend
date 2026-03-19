@@ -12,7 +12,7 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email });
+    return this.userModel.findOne({ email: email.toLowerCase() });
   }
 
   async findById(id: string): Promise<UserDocument | null> {
@@ -70,6 +70,32 @@ export class UsersService {
     return this.userModel.countDocuments({
       isActive: true,
       updatedAt: { $gte: since },
+    });
+  }
+
+  async setResetToken(
+    userId: string,
+    token: string,
+    expires: Date,
+  ): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      resetPasswordToken: token,
+      resetPasswordExpires: expires,
+    });
+  }
+
+  async findByResetToken(token: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+  }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
     });
   }
 }

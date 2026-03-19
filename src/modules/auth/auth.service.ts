@@ -2,10 +2,12 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -19,7 +21,8 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    const normalizedEmail = registerDto.email.toLowerCase();
+    const existingUser = await this.usersService.findByEmail(normalizedEmail);
     if (existingUser) {
       throw new ConflictException('Email already registered');
     }
@@ -27,6 +30,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     const user = await this.usersService.create({
       ...registerDto,
+      email: normalizedEmail,
       password: hashedPassword,
     });
 
@@ -139,6 +143,59 @@ export class AuthService {
       consentStatus: true,
       consentDate: new Date(),
     });
+  }
+
+  async forgotPassword(email: string) {
+    const normalizedEmail = email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
+    // Always return success to prevent email enumeration
+    if (!user || !user.isActive) {
+      return { message: 'If an account with that email exists, a reset code has been sent.' };
+    }
+
+    const resetToken = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6-char code
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+    await this.usersService.setResetToken(
+      user._id.toString(),
+      hashedToken,
+      expires,
+    );
+
+    // In production, send email with resetToken. For now, log it.
+    console.log(`[Password Reset] Code for ${normalizedEmail}: ${resetToken}`);
+
+    return {
+      message: 'If an account with that email exists, a reset code has been sent.',
+      // Include token in response for development/testing only
+      ...(this.configService.get('NODE_ENV') !== 'production' && {
+        data: { resetToken },
+      }),
+    };
+  }
+
+  async resetPassword(email: string, token: string, newPassword: string) {
+    const normalizedEmail = email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
+    if (
+      !user ||
+      !user.resetPasswordToken ||
+      !user.resetPasswordExpires ||
+      user.resetPasswordExpires < new Date()
+    ) {
+      throw new BadRequestException('Invalid or expired reset code');
+    }
+
+    const tokenMatch = await bcrypt.compare(token, user.resetPasswordToken);
+    if (!tokenMatch) {
+      throw new BadRequestException('Invalid or expired reset code');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.updatePassword(user._id.toString(), hashedPassword);
+
+    return { message: 'Password reset successful. You can now log in.' };
   }
 
   private async generateTokens(userId: string, email: string) {

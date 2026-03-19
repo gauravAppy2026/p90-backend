@@ -31,6 +31,9 @@ export class UserProgress {
 
   @Prop()
   lastActiveDate: Date;
+
+  @Prop()
+  lastLessonCompletedDate: string; // YYYY-MM-DD in user's timezone
 }
 
 export const UserProgressSchema = SchemaFactory.createForClass(UserProgress);

@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Timezone } from '../../common/decorators/timezone.decorator';
 import { ProgramService } from './program.service';
 import { CreateDayContentDto } from './dto/create-day-content.dto';
 import { UpdateDayContentDto } from './dto/update-day-content.dto';
@@ -31,8 +32,8 @@ export class ProgramController {
 
   @Get('program/progress')
   @UseGuards(JwtAuthGuard)
-  getProgress(@CurrentUser('_id') userId: string) {
-    return this.programService.getProgress(userId);
+  getProgress(@CurrentUser('_id') userId: string, @Timezone() timezone: string) {
+    return this.programService.getProgress(userId, timezone);
   }
 
   @Post('program/progress/start')
@@ -43,8 +44,8 @@ export class ProgramController {
 
   @Patch('program/progress/complete-day')
   @UseGuards(JwtAuthGuard)
-  completeDay(@CurrentUser('_id') userId: string) {
-    return this.programService.completeDay(userId);
+  completeDay(@CurrentUser('_id') userId: string, @Timezone() timezone: string) {
+    return this.programService.completeDay(userId, timezone);
   }
 
   @Get('program/progress/summary')
