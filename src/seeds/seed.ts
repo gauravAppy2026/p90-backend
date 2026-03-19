@@ -3,6 +3,7 @@ import { AppModule } from '../app.module';
 import { UsersService } from '../modules/users/users.service';
 import { ProgramService } from '../modules/program/program.service';
 import { ChecklistService } from '../modules/checklist/checklist.service';
+import { ResourcesService } from '../modules/resources/resources.service';
 import { UserRole } from '../modules/users/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -12,6 +13,7 @@ async function seed() {
   const usersService = app.get(UsersService);
   const programService = app.get(ProgramService);
   const checklistService = app.get(ChecklistService);
+  const resourcesService = app.get(ResourcesService);
   const configService = app.get(ConfigService);
 
   // 1. Create admin user
@@ -94,6 +96,38 @@ async function seed() {
       console.log(`Created checklist item: ${item.label}`);
     } catch (e) {
       console.log(`Checklist item "${item.label}" already exists`);
+    }
+  }
+
+  // 4. Seed default resources
+  const defaultResources = [
+    // Learning
+    { title: 'The Body Electric', description: 'Robert O. Becker\'s groundbreaking research on bioelectricity and the body\'s natural healing currents.', url: 'https://www.amazon.com/Body-Electric-Electromagnetism-Foundation-Life/dp/0688069711', type: 'book', category: 'learning', isFeatured: true, order: 1 },
+    { title: 'Energy Medicine: The Scientific Basis', description: 'James Oschman explores the scientific evidence behind energy healing and biofield therapies.', url: 'https://www.amazon.com/Energy-Medicine-Scientific-James-Oschman/dp/0443067295', type: 'book', category: 'learning', isFeatured: false, order: 2 },
+    { title: 'How PEMF Therapy Works', description: 'Comprehensive article explaining pulsed electromagnetic field therapy and its mechanisms.', url: 'https://www.pemf.com/what-is-pemf/', type: 'article', category: 'learning', isFeatured: false, order: 3 },
+    // Wellness
+    { title: 'The Healing Power of Frequency', description: 'Understanding how specific frequencies interact with the body to promote recovery and wellness.', url: 'https://pubmed.ncbi.nlm.nih.gov/34262567/', type: 'article', category: 'wellness', isFeatured: true, order: 4 },
+    { title: 'Breath: The New Science of a Lost Art', description: 'James Nestor reveals the science behind ancient breathing practices and their health benefits.', url: 'https://www.amazon.com/Breath-New-Science-Lost-Art/dp/0735213615', type: 'book', category: 'wellness', isFeatured: false, order: 5 },
+    { title: 'Daily Wellness Routine Guide', description: 'Video guide on building an effective daily wellness routine with device sessions.', url: 'https://www.youtube.com/watch?v=wellness-routine', type: 'video', category: 'wellness', isFeatured: false, order: 6 },
+    // Devices
+    { title: 'Understanding Your P90 Device', description: 'Official guide to getting the most out of your P90 device settings and session protocols.', url: 'https://p90wellness.com/device-guide', type: 'article', category: 'devices', isFeatured: true, order: 7 },
+    { title: 'Device Maintenance & Care', description: 'Tips for maintaining your device for optimal performance and longevity.', url: 'https://p90wellness.com/maintenance', type: 'article', category: 'devices', isFeatured: false, order: 8 },
+    // Nutrition
+    { title: 'Anti-Inflammatory Diet Guide', description: 'Complete guide to foods that reduce inflammation and support your body\'s healing process.', url: 'https://www.health.harvard.edu/staying-healthy/foods-that-fight-inflammation', type: 'article', category: 'nutrition', isFeatured: true, order: 9 },
+    { title: 'The Wahls Protocol', description: 'Dr. Terry Wahls\' research-backed approach to using food as medicine for cellular health.', url: 'https://www.amazon.com/Wahls-Protocol-Autoimmune-Conditions-Principles/dp/1583335544', type: 'book', category: 'nutrition', isFeatured: false, order: 10 },
+    { title: 'Smoothie Recipes for Recovery', description: 'Nutrient-dense smoothie recipes designed to complement your P90 program.', url: 'https://p90wellness.com/smoothie-recipes', type: 'article', category: 'nutrition', isFeatured: false, order: 11 },
+    // Mindfulness
+    { title: 'Meditation for Beginners', description: '10-minute guided meditation designed for P90 users to enhance session effectiveness.', url: 'https://www.youtube.com/watch?v=meditation-guide', type: 'video', category: 'mindfulness', isFeatured: true, order: 12 },
+    { title: 'The Relaxation Response', description: 'Dr. Herbert Benson\'s classic on how relaxation techniques trigger the body\'s healing mechanisms.', url: 'https://www.amazon.com/Relaxation-Response-Herbert-Benson/dp/0380006766', type: 'book', category: 'mindfulness', isFeatured: false, order: 13 },
+    { title: 'Body Scan Meditation Practice', description: 'Guided body scan technique to increase awareness during and after device sessions.', url: 'https://www.youtube.com/watch?v=body-scan', type: 'video', category: 'mindfulness', isFeatured: false, order: 14 },
+  ];
+
+  for (const resource of defaultResources) {
+    try {
+      await resourcesService.create(resource as any);
+      console.log(`Created resource: ${resource.title}`);
+    } catch (e) {
+      console.log(`Resource "${resource.title}" already exists or failed`);
     }
   }
 
