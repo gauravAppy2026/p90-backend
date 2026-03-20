@@ -2,6 +2,7 @@ import {
   IsString,
   IsOptional,
   IsBoolean,
+  IsEnum,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -15,4 +16,8 @@ export class AnswerQuestionDto {
   @IsOptional()
   @IsBoolean()
   isPublic?: boolean;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 }
