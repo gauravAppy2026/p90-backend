@@ -24,6 +24,12 @@ export class QuestionsService {
       .sort({ createdAt: -1 });
   }
 
+  async getMyQuestions(userId: string): Promise<QuestionDocument[]> {
+    return this.questionModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 });
+  }
+
   // --- Admin ---
 
   async findAll(

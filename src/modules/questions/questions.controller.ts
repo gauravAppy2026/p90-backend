@@ -35,6 +35,12 @@ export class QuestionsController {
     return this.questionsService.getPublicFaqs();
   }
 
+  @Get('questions/mine')
+  @UseGuards(JwtAuthGuard)
+  getMyQuestions(@CurrentUser('_id') userId: string) {
+    return this.questionsService.getMyQuestions(userId);
+  }
+
   // --- Admin endpoints ---
 
   @Get('admin/questions')
