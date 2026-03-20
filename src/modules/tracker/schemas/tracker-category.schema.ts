@@ -25,6 +25,18 @@ export class TrackerCategory {
 
   @Prop({ default: 0 })
   order: number;
+
+  @Prop()
+  icon: string;
+
+  @Prop()
+  iconBgColor: string;
+
+  @Prop()
+  iconColor: string;
+
+  @Prop({ default: false })
+  isCore: boolean;
 }
 
 export const TrackerCategorySchema =
