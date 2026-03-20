@@ -4,6 +4,7 @@ import { UsersService } from '../modules/users/users.service';
 import { ProgramService } from '../modules/program/program.service';
 import { ChecklistService } from '../modules/checklist/checklist.service';
 import { ResourcesService } from '../modules/resources/resources.service';
+import { TrackerService } from '../modules/tracker/tracker.service';
 import { UserRole } from '../modules/users/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -14,6 +15,7 @@ async function seed() {
   const programService = app.get(ProgramService);
   const checklistService = app.get(ChecklistService);
   const resourcesService = app.get(ResourcesService);
+  const trackerService = app.get(TrackerService);
   const configService = app.get(ConfigService);
 
   // 1. Create admin user
@@ -128,6 +130,22 @@ async function seed() {
       console.log(`Created resource: ${resource.title}`);
     } catch (e) {
       console.log(`Resource "${resource.title}" already exists or failed`);
+    }
+  }
+
+  // 5. Seed custom tracker categories
+  const trackerCategories = [
+    { name: 'Sleep Quality', type: 'scale', minValue: 0, maxValue: 10, infoText: 'Rate your sleep quality from 0 (terrible) to 10 (perfect). Consider how rested you feel.', order: 1, isActive: true },
+    { name: 'Pain Level', type: 'scale', minValue: 0, maxValue: 10, infoText: 'Rate your pain from 0 (no pain) to 10 (worst pain). Track changes over your program.', order: 2, isActive: true },
+    { name: 'Stress Level', type: 'scale', minValue: 0, maxValue: 10, infoText: 'Rate your stress from 0 (completely relaxed) to 10 (extremely stressed).', order: 3, isActive: true },
+  ];
+
+  for (const cat of trackerCategories) {
+    try {
+      await trackerService.createCategory(cat);
+      console.log(`Created tracker category: ${cat.name}`);
+    } catch (e) {
+      console.log(`Tracker category "${cat.name}" already exists`);
     }
   }
 
