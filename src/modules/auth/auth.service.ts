@@ -8,7 +8,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import * as nodemailer from 'nodemailer';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -164,46 +163,50 @@ export class AuthService {
       expires,
     );
 
-    // Send reset code via Brevo SMTP
+    // Send reset code via Brevo HTTP API (SMTP blocked on Render free tier)
     try {
-      const smtpKey = this.configService.get('BREVO_SMTP_KEY');
-      if (smtpKey) {
-        const transporter = nodemailer.createTransport({
-          host: 'smtp-relay.brevo.com',
-          port: 587,
-          auth: {
-            user: this.configService.get('BREVO_SMTP_USER') || 'noreply@p90app.com',
-            pass: smtpKey,
+      const brevoApiKey = this.configService.get('BREVO_API_KEY');
+      const senderEmail = this.configService.get('BREVO_SMTP_USER') || 'noreply@p90app.com';
+      if (brevoApiKey) {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': brevoApiKey,
+            'content-type': 'application/json',
           },
-        });
-
-        await transporter.sendMail({
-          from: '"P90 Companion" <noreply@p90app.com>',
-          to: normalizedEmail,
-          subject: 'Your P90 Password Reset Code',
-          html: `
-            <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <div style="width: 56px; height: 56px; background: #10b981; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;">
-                  <span style="font-size: 28px; color: white;">🍃</span>
+          body: JSON.stringify({
+            sender: { name: 'P90 Companion', email: senderEmail },
+            to: [{ email: normalizedEmail }],
+            subject: 'Your P90 Password Reset Code',
+            htmlContent: `
+              <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+                <div style="text-align: center; margin-bottom: 32px;">
+                  <div style="width: 56px; height: 56px; background: #10b981; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 28px; color: white;">🍃</span>
+                  </div>
+                  <h2 style="color: #292524; margin: 16px 0 4px;">Password Reset</h2>
+                  <p style="color: #78716c; font-size: 14px;">P90 Companion</p>
                 </div>
-                <h2 style="color: #292524; margin: 16px 0 4px;">Password Reset</h2>
-                <p style="color: #78716c; font-size: 14px;">P90 Companion</p>
-              </div>
-              <p style="color: #44403c; font-size: 15px; line-height: 1.6;">
-                You requested a password reset. Use the code below to reset your password. This code expires in <strong>15 minutes</strong>.
-              </p>
-              <div style="text-align: center; margin: 32px 0;">
-                <div style="display: inline-block; background: #f5f5f4; border-radius: 12px; padding: 16px 32px; letter-spacing: 8px; font-size: 32px; font-weight: bold; color: #292524;">
-                  ${resetToken}
+                <p style="color: #44403c; font-size: 15px; line-height: 1.6;">
+                  You requested a password reset. Use the code below to reset your password. This code expires in <strong>15 minutes</strong>.
+                </p>
+                <div style="text-align: center; margin: 32px 0;">
+                  <div style="display: inline-block; background: #f5f5f4; border-radius: 12px; padding: 16px 32px; letter-spacing: 8px; font-size: 32px; font-weight: bold; color: #292524;">
+                    ${resetToken}
+                  </div>
                 </div>
+                <p style="color: #78716c; font-size: 13px; line-height: 1.5;">
+                  If you didn't request this, you can safely ignore this email. Your password won't be changed.
+                </p>
               </div>
-              <p style="color: #78716c; font-size: 13px; line-height: 1.5;">
-                If you didn't request this, you can safely ignore this email. Your password won't be changed.
-              </p>
-            </div>
-          `,
+            `,
+          }),
         });
+        if (!response.ok) {
+          const errBody = await response.text();
+          console.error('Brevo API error:', response.status, errBody);
+        }
       } else {
         console.log(`[Password Reset] Code for ${normalizedEmail}: ${resetToken}`);
       }
