@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -164,13 +164,21 @@ export class AuthService {
       expires,
     );
 
-    // Send reset code via email
+    // Send reset code via Brevo SMTP
     try {
-      const resendKey = this.configService.get('RESEND_API_KEY');
-      if (resendKey) {
-        const resend = new Resend(resendKey);
-        await resend.emails.send({
-          from: 'P90 Companion <onboarding@resend.dev>',
+      const smtpKey = this.configService.get('BREVO_SMTP_KEY');
+      if (smtpKey) {
+        const transporter = nodemailer.createTransport({
+          host: 'smtp-relay.brevo.com',
+          port: 587,
+          auth: {
+            user: this.configService.get('BREVO_SMTP_USER') || 'noreply@p90app.com',
+            pass: smtpKey,
+          },
+        });
+
+        await transporter.sendMail({
+          from: '"P90 Companion" <noreply@p90app.com>',
           to: normalizedEmail,
           subject: 'Your P90 Password Reset Code',
           html: `
