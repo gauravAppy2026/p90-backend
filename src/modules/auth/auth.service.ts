@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { Resend } from 'resend';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -163,15 +164,47 @@ export class AuthService {
       expires,
     );
 
-    // In production, send email with resetToken. For now, log it.
-    console.log(`[Password Reset] Code for ${normalizedEmail}: ${resetToken}`);
+    // Send reset code via email
+    try {
+      const resendKey = this.configService.get('RESEND_API_KEY');
+      if (resendKey) {
+        const resend = new Resend(resendKey);
+        await resend.emails.send({
+          from: 'P90 Companion <onboarding@resend.dev>',
+          to: normalizedEmail,
+          subject: 'Your P90 Password Reset Code',
+          html: `
+            <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+              <div style="text-align: center; margin-bottom: 32px;">
+                <div style="width: 56px; height: 56px; background: #10b981; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;">
+                  <span style="font-size: 28px; color: white;">🍃</span>
+                </div>
+                <h2 style="color: #292524; margin: 16px 0 4px;">Password Reset</h2>
+                <p style="color: #78716c; font-size: 14px;">P90 Companion</p>
+              </div>
+              <p style="color: #44403c; font-size: 15px; line-height: 1.6;">
+                You requested a password reset. Use the code below to reset your password. This code expires in <strong>15 minutes</strong>.
+              </p>
+              <div style="text-align: center; margin: 32px 0;">
+                <div style="display: inline-block; background: #f5f5f4; border-radius: 12px; padding: 16px 32px; letter-spacing: 8px; font-size: 32px; font-weight: bold; color: #292524;">
+                  ${resetToken}
+                </div>
+              </div>
+              <p style="color: #78716c; font-size: 13px; line-height: 1.5;">
+                If you didn't request this, you can safely ignore this email. Your password won't be changed.
+              </p>
+            </div>
+          `,
+        });
+      } else {
+        console.log(`[Password Reset] Code for ${normalizedEmail}: ${resetToken}`);
+      }
+    } catch (emailErr) {
+      console.error('Failed to send reset email:', emailErr);
+    }
 
     return {
       message: 'If an account with that email exists, a reset code has been sent.',
-      // Include token in response for development/testing only
-      ...(this.configService.get('NODE_ENV') !== 'production' && {
-        data: { resetToken },
-      }),
     };
   }
 
