@@ -20,7 +20,7 @@ export class QuestionsService {
 
   async getPublicFaqs(): Promise<QuestionDocument[]> {
     return this.questionModel
-      .find({ isPublic: true, status: 'answered' })
+      .find({ isPublic: true, status: { $in: ['answered', 'archived'] } })
       .sort({ createdAt: -1 });
   }
 
