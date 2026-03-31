@@ -36,6 +36,12 @@ export class ProgramController {
     return this.programService.getProgress(userId, timezone);
   }
 
+  @Post('program/progress/onboarding')
+  @UseGuards(JwtAuthGuard)
+  saveOnboarding(@CurrentUser('_id') userId: string, @Body() body: any) {
+    return this.programService.saveOnboarding(userId, body);
+  }
+
   @Post('program/progress/start')
   @UseGuards(JwtAuthGuard)
   startProgram(@CurrentUser('_id') userId: string) {

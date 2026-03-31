@@ -34,6 +34,24 @@ export class UserProgress {
 
   @Prop()
   lastLessonCompletedDate: string; // YYYY-MM-DD in user's timezone
+
+  @Prop({ default: false })
+  dataOptIn: boolean; // MyOlyLife data sharing consent
+
+  @Prop({ default: false })
+  counterIndicationsAccepted: boolean;
+
+  @Prop({ type: Object })
+  demographics: {
+    age?: string;
+    sex?: string;
+    weight?: string;
+    chiefComplaint?: string;
+    healthGoals?: string;
+    currentConditions?: string;
+    medications?: string;
+    painAreas?: string;
+  };
 }
 
 export const UserProgressSchema = SchemaFactory.createForClass(UserProgress);

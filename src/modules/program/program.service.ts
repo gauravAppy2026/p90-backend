@@ -32,6 +32,29 @@ export class ProgramService {
     };
   }
 
+  async saveOnboarding(userId: string, data: {
+    disclaimerAccepted?: boolean;
+    counterIndicationsAccepted?: boolean;
+    dataOptIn?: boolean;
+    demographics?: any;
+  }): Promise<UserProgressDocument> {
+    const existing = await this.progressModel.findOne({
+      userId: new Types.ObjectId(userId),
+    });
+    if (existing) {
+      if (data.disclaimerAccepted !== undefined) existing.disclaimerAccepted = data.disclaimerAccepted;
+      if (data.counterIndicationsAccepted !== undefined) existing.counterIndicationsAccepted = data.counterIndicationsAccepted;
+      if (data.dataOptIn !== undefined) existing.dataOptIn = data.dataOptIn;
+      if (data.demographics) existing.demographics = data.demographics;
+      return existing.save();
+    }
+    return this.progressModel.create({
+      userId: new Types.ObjectId(userId),
+      ...data,
+      currentDay: 1,
+    });
+  }
+
   async startProgram(userId: string): Promise<UserProgressDocument> {
     const existing = await this.progressModel.findOne({
       userId: new Types.ObjectId(userId),
