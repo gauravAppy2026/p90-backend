@@ -35,6 +35,12 @@ export class DayContent {
   @Prop()
   reflectionPrompt: string;
 
+  @Prop({
+    type: [{ title: String, url: String }],
+    default: [],
+  })
+  documents: { title: string; url: string }[];
+
   @Prop({ default: false })
   isPublished: boolean;
 
