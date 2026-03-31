@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Product } from './schemas/product.schema';
+import { GroceryCategory } from './schemas/grocery-category.schema';
+import { Supplement } from './schemas/supplement.schema';
 import { NotFoundException } from '@nestjs/common';
 
 describe('ProductsService', () => {
@@ -21,6 +23,8 @@ describe('ProductsService', () => {
       providers: [
         ProductsService,
         { provide: getModelToken(Product.name), useValue: model },
+        { provide: getModelToken(GroceryCategory.name), useValue: { find: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue([]) }), create: jest.fn(), findByIdAndUpdate: jest.fn(), findByIdAndDelete: jest.fn() } },
+        { provide: getModelToken(Supplement.name), useValue: { find: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue([]) }), create: jest.fn(), findByIdAndUpdate: jest.fn(), findByIdAndDelete: jest.fn() } },
       ],
     }).compile();
 

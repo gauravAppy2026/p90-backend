@@ -22,6 +22,12 @@ export class ProductsService {
     return this.productModel.find().sort({ order: 1 });
   }
 
+  async findById(id: string): Promise<ProductDocument> {
+    const product = await this.productModel.findById(id);
+    if (!product) throw new NotFoundException('Product not found');
+    return product;
+  }
+
   async create(data: Partial<Product>): Promise<ProductDocument> {
     return this.productModel.create(data);
   }

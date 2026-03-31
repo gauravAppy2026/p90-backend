@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChecklistService } from './checklist.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { DailyChecklist } from './schemas/daily-checklist.schema';
+import { ChecklistConfig } from './schemas/checklist-config.schema';
 import { Types } from 'mongoose';
 
 const userId = new Types.ObjectId().toString();
@@ -25,6 +26,7 @@ describe('ChecklistService', () => {
       providers: [
         ChecklistService,
         { provide: getModelToken(DailyChecklist.name), useValue: model },
+        { provide: getModelToken(ChecklistConfig.name), useValue: { find: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue([]) }) } },
       ],
     }).compile();
 
