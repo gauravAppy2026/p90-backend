@@ -52,6 +52,10 @@ export class UpdateDayContentDto {
   reflectionPrompt?: string;
 
   @IsOptional()
+  @IsArray()
+  documents?: { title: string; url: string }[];
+
+  @IsOptional()
   @IsBoolean()
   isPublished?: boolean;
 
