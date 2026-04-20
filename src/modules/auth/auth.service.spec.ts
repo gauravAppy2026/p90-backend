@@ -19,6 +19,7 @@ describe('AuthService', () => {
       findByEmail: jest.fn(),
       create: jest.fn(),
       findById: jest.fn(),
+      findByIdWithRefreshToken: jest.fn(),
       updateRefreshToken: jest.fn(),
       update: jest.fn(),
     };
@@ -98,7 +99,7 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     it('should refresh tokens successfully', async () => {
-      usersService.findById!.mockResolvedValue({ _id: 'user-id', email: 'test@test.com', refreshToken: 'hashed-refresh' } as any);
+      usersService.findByIdWithRefreshToken!.mockResolvedValue({ _id: 'user-id', email: 'test@test.com', refreshToken: 'hashed-refresh' } as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed');
 
@@ -107,12 +108,12 @@ describe('AuthService', () => {
     });
 
     it('should throw if user not found', async () => {
-      usersService.findById!.mockResolvedValue(null);
+      usersService.findByIdWithRefreshToken!.mockResolvedValue(null);
       await expect(service.refresh('bad-id', 'token')).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw if token does not match', async () => {
-      usersService.findById!.mockResolvedValue({ _id: 'user-id', refreshToken: 'hashed' } as any);
+      usersService.findByIdWithRefreshToken!.mockResolvedValue({ _id: 'user-id', refreshToken: 'hashed' } as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       await expect(service.refresh('user-id', 'wrong-token')).rejects.toThrow(UnauthorizedException);
     });

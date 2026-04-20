@@ -16,6 +16,10 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<UserDocument | null> {
+    return this.userModel.findById(id).select('-password -refreshToken');
+  }
+
+  async findByIdWithRefreshToken(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id);
   }
 

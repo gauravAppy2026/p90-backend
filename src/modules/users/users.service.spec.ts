@@ -55,9 +55,24 @@ describe('UsersService', () => {
   });
 
   it('should find user by id', async () => {
-    model.findById.mockResolvedValue({ _id: 'id', email: 'test@test.com' });
+    model.findById.mockReturnValue({
+      select: jest.fn().mockResolvedValue({ _id: 'id', email: 'test@test.com' }),
+    });
     const result = await service.findById('id');
     expect(result?._id).toBe('id');
+  });
+
+  it('findById should exclude password and refreshToken', async () => {
+    const select = jest.fn().mockResolvedValue(null);
+    model.findById.mockReturnValue({ select });
+    await service.findById('id');
+    expect(select).toHaveBeenCalledWith('-password -refreshToken');
+  });
+
+  it('findByIdWithRefreshToken should return raw document (for refresh flow)', async () => {
+    model.findById.mockResolvedValue({ _id: 'id', refreshToken: 'hashed' });
+    const result = await service.findByIdWithRefreshToken('id');
+    expect(result?.refreshToken).toBe('hashed');
   });
 
   it('should soft delete a user', async () => {

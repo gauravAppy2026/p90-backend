@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   UseGuards,
@@ -22,12 +23,15 @@ export class UploadController {
         if (file.mimetype.startsWith('image/')) {
           cb(null, true);
         } else {
-          cb(new Error('Only image files are allowed'), false);
+          cb(new BadRequestException('Only image files are allowed'), false);
         }
       },
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Only image files are allowed');
+    }
     return this.uploadService.uploadFile(file);
   }
 }
