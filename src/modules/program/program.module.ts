@@ -4,6 +4,7 @@ import { UserProgress, UserProgressSchema } from './schemas/user-progress.schema
 import { DayContent, DayContentSchema } from './schemas/day-content.schema';
 import { ProgramService } from './program.service';
 import { ProgramController } from './program.controller';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { ProgramController } from './program.controller';
       { name: UserProgress.name, schema: UserProgressSchema },
       { name: DayContent.name, schema: DayContentSchema },
     ]),
+    SubscriptionsModule,
   ],
   controllers: [ProgramController],
   providers: [ProgramService],

@@ -54,6 +54,12 @@ export class ProgramController {
     return this.programService.completeDay(userId, timezone);
   }
 
+  @Post('program/progress/restart')
+  @UseGuards(JwtAuthGuard)
+  restartProgram(@CurrentUser('_id') userId: string) {
+    return this.programService.restartProgram(userId);
+  }
+
   @Get('program/progress/summary')
   @UseGuards(JwtAuthGuard)
   getSummary(@CurrentUser('_id') userId: string) {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -7,6 +7,7 @@ import {
 } from './schemas/user-progress.schema';
 import { DayContent, DayContentDocument } from './schemas/day-content.schema';
 import { getLocalDate } from '../../common/utils/timezone.util';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Injectable()
 export class ProgramService {
@@ -15,6 +16,7 @@ export class ProgramService {
     private progressModel: Model<UserProgressDocument>,
     @InjectModel(DayContent.name)
     private dayContentModel: Model<DayContentDocument>,
+    private subscriptions: SubscriptionsService,
   ) {}
 
   // --- User Progress ---
@@ -131,12 +133,46 @@ export class ProgramService {
 
     return {
       currentDay: progress.currentDay,
+      currentMonth: progress.currentMonth ?? 1,
       completedLessons: progress.completedLessons.length,
       completionPercentage: progress.completionPercentage,
       streakCount: progress.streakCount,
       startDate: progress.startDate,
       programStarted: progress.programStarted,
+      tokenBalance: progress.tokenBalance ?? 0,
     };
+  }
+
+  // Restart the 30-day program. Only allowed once the user has completed
+  // all 30 days. Closes the current MonthCycle, opens a new one, and
+  // resets day-level state (currentDay, completedLessons, streak,
+  // completionPercentage). Demographics, consent, photos, and the
+  // tracker history all persist across cycles — those are tied to the
+  // user, not the cycle.
+  async restartProgram(userId: string) {
+    const progress = await this.progressModel.findOne({
+      userId: new Types.ObjectId(userId),
+    });
+    if (!progress) throw new NotFoundException('Progress not found');
+    if (progress.completedLessons.length < 30) {
+      throw new BadRequestException(
+        'You can only restart after completing all 30 days.',
+      );
+    }
+
+    await this.subscriptions.completeCurrentCycle(userId);
+    const nextMonth = (progress.currentMonth ?? 1) + 1;
+    await this.subscriptions.startNewCycle(userId, nextMonth);
+
+    progress.currentMonth = nextMonth;
+    progress.currentDay = 1;
+    progress.completedLessons = [];
+    progress.completionPercentage = 0;
+    progress.streakCount = 0;
+    progress.lastLessonCompletedDate = '';
+    progress.startDate = new Date();
+    progress.lastActiveDate = new Date();
+    return progress.save();
   }
 
   // --- Day Content (Admin) ---
