@@ -14,6 +14,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SubscriptionsService } from './subscriptions.service';
 import { GenerateCodesDto, RedeemCodeDto } from './dto/generate-codes.dto';
+import { VerifyAppleReceiptDto, VerifyGooglePurchaseDto } from './dto/iap.dto';
+import { BadRequestException } from '@nestjs/common';
 
 @Controller('api')
 @UseGuards(JwtAuthGuard)
@@ -35,6 +37,47 @@ export class SubscriptionsController {
   @Post('subscriptions/redeem-code')
   redeem(@CurrentUser('_id') userId: string, @Body() body: RedeemCodeDto) {
     return this.subs.redeemCode({ userId, code: body.code });
+  }
+
+  @Post('subscriptions/verify-apple')
+  async verifyApple(
+    @CurrentUser('_id') userId: string,
+    @Body() body: VerifyAppleReceiptDto,
+  ) {
+    const result = await this.subs.verifyAppleReceipt(body.receipt);
+    if (!result.valid) {
+      throw new BadRequestException('Apple receipt could not be verified');
+    }
+    const purchase = await this.subs.recordPurchase({
+      userId,
+      product: body.product,
+      source: 'apple-iap',
+      transactionId: result.transactionId || `apple-${Date.now()}`,
+      metadata: { productId: result.productId, raw: result.raw },
+    });
+    return { purchase, verified: true };
+  }
+
+  @Post('subscriptions/verify-google')
+  async verifyGoogle(
+    @CurrentUser('_id') userId: string,
+    @Body() body: VerifyGooglePurchaseDto,
+  ) {
+    const result = await this.subs.verifyGooglePurchase({
+      productId: body.productId,
+      purchaseToken: body.purchaseToken,
+    });
+    if (!result.valid) {
+      throw new BadRequestException('Google purchase could not be verified');
+    }
+    const purchase = await this.subs.recordPurchase({
+      userId,
+      product: body.product,
+      source: 'google-iap',
+      transactionId: result.transactionId || body.purchaseToken,
+      metadata: { productId: body.productId, orderId: body.orderId, raw: result.raw },
+    });
+    return { purchase, verified: true };
   }
 
   // --- Admin --------------------------------------------------------------

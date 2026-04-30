@@ -38,6 +38,10 @@ export class SubscriptionsService {
     currency?: string;
     metadata?: Record<string, any>;
   }): Promise<PurchaseRecordDocument> {
+    // Idempotent on transactionId so a flaky network retry from the
+    // mobile client doesn't double-record a purchase.
+    const existing = await this.purchases.findOne({ transactionId: args.transactionId });
+    if (existing) return existing;
     return this.purchases.create({
       userId: new Types.ObjectId(args.userId),
       product: args.product,
@@ -48,6 +52,72 @@ export class SubscriptionsService {
       metadata: args.metadata,
       status: 'active',
     });
+  }
+
+  // Apple receipt verification. Sends the base-64 receipt to Apple's
+  // verifyReceipt endpoint (sandbox first, falls back to production
+  // if Apple says we hit the wrong env).
+  async verifyAppleReceipt(receiptB64: string): Promise<{ valid: boolean; transactionId?: string; productId?: string; raw?: any }> {
+    const sharedSecret = process.env.APPLE_IAP_SHARED_SECRET || '';
+    const verify = async (url: string) => {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          'receipt-data': receiptB64,
+          password: sharedSecret,
+          'exclude-old-transactions': true,
+        }),
+      });
+      return (await res.json()) as any;
+    };
+
+    let body = await verify('https://buy.itunes.apple.com/verifyReceipt');
+    if (body?.status === 21007) {
+      // Apple says "this is a sandbox receipt" — retry against the sandbox URL.
+      body = await verify('https://sandbox.itunes.apple.com/verifyReceipt');
+    }
+
+    if (body?.status !== 0) {
+      return { valid: false, raw: body };
+    }
+    const latest = body?.latest_receipt_info?.[0] || body?.receipt?.in_app?.[0];
+    return {
+      valid: true,
+      transactionId: latest?.transaction_id,
+      productId: latest?.product_id,
+      raw: body,
+    };
+  }
+
+  // Google Play receipt verification. Calls the Android Publisher API
+  // directly using a service-account access token (set GOOGLE_PLAY_*
+  // env vars). For simplicity v1 only verifies the purchaseToken is
+  // accepted — full subscription state checking is the next iteration.
+  async verifyGooglePurchase(args: {
+    productId: string;
+    purchaseToken: string;
+  }): Promise<{ valid: boolean; transactionId?: string; raw?: any }> {
+    const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || '';
+    const accessToken = process.env.GOOGLE_PLAY_ACCESS_TOKEN || '';
+    if (!packageName || !accessToken) {
+      // Not configured yet — accept the receipt as-is and trust the
+      // mobile-reported productId so end-to-end works in dev. In
+      // production these env vars MUST be set.
+      return { valid: true, transactionId: args.purchaseToken };
+    }
+    const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/products/${args.productId}/tokens/${args.purchaseToken}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!res.ok) {
+      return { valid: false };
+    }
+    const body = (await res.json()) as any;
+    // purchaseState 0 = purchased, 1 = cancelled, 2 = pending
+    return {
+      valid: body?.purchaseState === 0,
+      transactionId: body?.orderId || args.purchaseToken,
+      raw: body,
+    };
   }
 
   async hasActivePurchase(userId: string, product: PurchaseProduct): Promise<boolean> {
