@@ -15,6 +15,8 @@ import { ProductsModule } from './modules/products/products.module';
 import { RetreatModule } from './modules/retreat/retreat.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { GamificationModule } from './modules/gamification/gamification.module';
 import { SeedModule } from './seeds/seed.module';
 import { HealthController } from './health.controller';
 
@@ -49,6 +51,8 @@ import { HealthController } from './health.controller';
     RetreatModule,
     AnalyticsModule,
     UploadModule,
+    SubscriptionsModule,
+    GamificationModule,
     SeedModule,
   ],
   controllers: [HealthController],

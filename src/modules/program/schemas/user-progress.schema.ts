@@ -52,6 +52,15 @@ export class UserProgress {
     medications?: string;
     painAreas?: string;
   };
+
+  // Cached running balance — TokenLedger is the source of truth.
+  @Prop({ default: 0, min: 0 })
+  tokenBalance: number;
+
+  // Which restart cycle the user is on. 1 = first run, 2 = first restart.
+  // Persists across day-completions; bumps when user taps "Restart to Day 1".
+  @Prop({ default: 1, min: 1 })
+  currentMonth: number;
 }
 
 export const UserProgressSchema = SchemaFactory.createForClass(UserProgress);
