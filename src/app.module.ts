@@ -19,6 +19,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { GamificationModule } from './modules/gamification/gamification.module';
 import { QuickStartModule } from './modules/quick-start/quick-start.module';
 import { SaqModule } from './modules/saq/saq.module';
+import { SplashModule } from './modules/splash/splash.module';
 import { SeedModule } from './seeds/seed.module';
 import { HealthController } from './health.controller';
 
@@ -57,6 +58,7 @@ import { HealthController } from './health.controller';
     GamificationModule,
     QuickStartModule,
     SaqModule,
+    SplashModule,
     SeedModule,
   ],
   controllers: [HealthController],
