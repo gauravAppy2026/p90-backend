@@ -10,6 +10,7 @@ import {
 } from './schemas/checklist-config.schema';
 import { ChecklistService } from './checklist.service';
 import { ChecklistController } from './checklist.controller';
+import { GamificationModule } from '../gamification/gamification.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ChecklistController } from './checklist.controller';
       { name: DailyChecklist.name, schema: DailyChecklistSchema },
       { name: ChecklistConfig.name, schema: ChecklistConfigSchema },
     ]),
+    GamificationModule,
   ],
   controllers: [ChecklistController],
   providers: [ChecklistService],

@@ -7,6 +7,7 @@ import {
 } from './schemas/tracker-category.schema';
 import { TrackerService } from './tracker.service';
 import { TrackerController } from './tracker.controller';
+import { GamificationModule } from '../gamification/gamification.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TrackerController } from './tracker.controller';
       { name: DailyTracker.name, schema: DailyTrackerSchema },
       { name: TrackerCategory.name, schema: TrackerCategorySchema },
     ]),
+    GamificationModule,
   ],
   controllers: [TrackerController],
   providers: [TrackerService],

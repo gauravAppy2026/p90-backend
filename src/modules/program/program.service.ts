@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -8,6 +8,7 @@ import {
 import { DayContent, DayContentDocument } from './schemas/day-content.schema';
 import { getLocalDate } from '../../common/utils/timezone.util';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { GamificationService } from '../gamification/gamification.service';
 
 @Injectable()
 export class ProgramService {
@@ -17,6 +18,7 @@ export class ProgramService {
     @InjectModel(DayContent.name)
     private dayContentModel: Model<DayContentDocument>,
     private subscriptions: SubscriptionsService,
+    @Optional() private gamification?: GamificationService,
   ) {}
 
   // --- User Progress ---
@@ -122,7 +124,44 @@ export class ProgramService {
       }
     }
 
-    return progress.save();
+    const saved = await progress.save();
+
+    // Award tokens — referenceIds scope to the cycle so a Month 2 lesson
+    // earns the same way a Month 1 lesson did, and streaks reset per cycle.
+    if (this.gamification) {
+      const cycle = saved.currentMonth ?? 1;
+      await this.gamification.award({
+        userId,
+        key: 'lesson_complete',
+        referenceId: `m${cycle}-lesson:${currentDay}`,
+        monthCycle: cycle,
+      });
+      const streak = saved.streakCount;
+      if (streak === 7) {
+        await this.gamification.award({
+          userId, key: 'streak_7_day',
+          referenceId: `m${cycle}-streak7`, monthCycle: cycle,
+        });
+      } else if (streak === 14) {
+        await this.gamification.award({
+          userId, key: 'streak_14_day',
+          referenceId: `m${cycle}-streak14`, monthCycle: cycle,
+        });
+      } else if (streak === 30) {
+        await this.gamification.award({
+          userId, key: 'streak_30_day',
+          referenceId: `m${cycle}-streak30`, monthCycle: cycle,
+        });
+      }
+      if (saved.completedLessons.length === 30) {
+        await this.gamification.award({
+          userId, key: 'program_complete',
+          referenceId: `m${cycle}-complete`, monthCycle: cycle,
+        });
+      }
+    }
+
+    return saved;
   }
 
   async getSummary(userId: string) {

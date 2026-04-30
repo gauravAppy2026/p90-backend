@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -10,6 +10,7 @@ import {
   TrackerCategoryDocument,
 } from './schemas/tracker-category.schema';
 import { getLocalDate } from '../../common/utils/timezone.util';
+import { GamificationService } from '../gamification/gamification.service';
 
 @Injectable()
 export class TrackerService {
@@ -18,6 +19,7 @@ export class TrackerService {
     private trackerModel: Model<DailyTrackerDocument>,
     @InjectModel(TrackerCategory.name)
     private categoryModel: Model<TrackerCategoryDocument>,
+    @Optional() private gamification?: GamificationService,
   ) {}
 
   async getToday(userId: string, timezone?: string): Promise<DailyTrackerDocument | null> {
@@ -34,11 +36,36 @@ export class TrackerService {
     timezone?: string,
   ): Promise<DailyTrackerDocument> {
     const today = getLocalDate(timezone);
-    return this.trackerModel.findOneAndUpdate(
+    const wasNew = !(await this.trackerModel.findOne({
+      userId: new Types.ObjectId(userId),
+      date: today,
+    }));
+    const result = await this.trackerModel.findOneAndUpdate(
       { userId: new Types.ObjectId(userId), date: today },
       { ...data, userId: new Types.ObjectId(userId), date: today },
       { new: true, upsert: true },
     );
+    if (this.gamification) {
+      // Reward the first save of the day. The referenceId scopes the
+      // award to today so saving multiple times in a day doesn't farm
+      // duplicate tokens.
+      if (wasNew) {
+        await this.gamification.award({
+          userId,
+          key: 'tracker_entry',
+          referenceId: `tracker:${today}`,
+        });
+      }
+      // A photo URL on the entry awards photo tokens once per day.
+      if (data?.photoUrl) {
+        await this.gamification.award({
+          userId,
+          key: 'progress_photo',
+          referenceId: `photo:${today}`,
+        });
+      }
+    }
+    return result;
   }
 
   async getHistory(

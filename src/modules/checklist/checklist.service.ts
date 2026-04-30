@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -10,6 +10,7 @@ import {
   ChecklistConfigDocument,
 } from './schemas/checklist-config.schema';
 import { getLocalDate } from '../../common/utils/timezone.util';
+import { GamificationService } from '../gamification/gamification.service';
 
 @Injectable()
 export class ChecklistService {
@@ -18,6 +19,7 @@ export class ChecklistService {
     private checklistModel: Model<DailyChecklistDocument>,
     @InjectModel(ChecklistConfig.name)
     private configModel: Model<ChecklistConfigDocument>,
+    @Optional() private gamification?: GamificationService,
   ) {}
 
   async getToday(userId: string, timezone?: string): Promise<DailyChecklistDocument | null> {
@@ -37,8 +39,9 @@ export class ChecklistService {
     const items = data.items || {};
 
     const completionCount = Object.values(items).filter(Boolean).length;
+    const totalItems = await this.configModel.countDocuments({ isActive: true });
 
-    return this.checklistModel.findOneAndUpdate(
+    const result = await this.checklistModel.findOneAndUpdate(
       { userId: new Types.ObjectId(userId), date: today },
       {
         userId: new Types.ObjectId(userId),
@@ -49,6 +52,17 @@ export class ChecklistService {
       },
       { new: true, upsert: true },
     );
+
+    // Award once per day when every active checklist item is ticked.
+    if (this.gamification && totalItems > 0 && completionCount >= totalItems) {
+      await this.gamification.award({
+        userId,
+        key: 'checklist_all_done',
+        referenceId: `checklist:${today}`,
+      });
+    }
+
+    return result;
   }
 
   async getHistory(

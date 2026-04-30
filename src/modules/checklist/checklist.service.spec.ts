@@ -26,7 +26,13 @@ describe('ChecklistService', () => {
       providers: [
         ChecklistService,
         { provide: getModelToken(DailyChecklist.name), useValue: model },
-        { provide: getModelToken(ChecklistConfig.name), useValue: { find: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue([]) }) } },
+        {
+          provide: getModelToken(ChecklistConfig.name),
+          useValue: {
+            find: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue([]) }),
+            countDocuments: jest.fn().mockResolvedValue(0),
+          },
+        },
       ],
     }).compile();
 
