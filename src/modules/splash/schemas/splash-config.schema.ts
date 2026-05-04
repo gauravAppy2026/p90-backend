@@ -20,6 +20,11 @@ export class SplashConfig {
   @Prop()
   heroImageUrl?: string;
 
+  // Fixed nature-photo background used by every screen of the mobile app
+  // (beach, field, etc.). When unset the app falls back to a sage gradient.
+  @Prop()
+  themeBackgroundUrl?: string;
+
   @Prop({ type: Object, default: () => ({}) })
   modules: {
     quickStart?: ModuleConfig;

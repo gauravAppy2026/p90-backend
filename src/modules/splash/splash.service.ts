@@ -67,6 +67,7 @@ export class SplashService implements OnModuleInit {
     if (dto.tagline !== undefined) existing.tagline = dto.tagline;
     if (dto.missionStatement !== undefined) existing.missionStatement = dto.missionStatement;
     if (dto.heroImageUrl !== undefined) existing.heroImageUrl = dto.heroImageUrl;
+    if (dto.themeBackgroundUrl !== undefined) existing.themeBackgroundUrl = dto.themeBackgroundUrl;
     if (dto.modules) {
       existing.modules = { ...existing.modules, ...dto.modules };
     }

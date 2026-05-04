@@ -65,6 +65,10 @@ export class UpdateSplashConfigDto {
   heroImageUrl?: string;
 
   @IsOptional()
+  @IsUrl()
+  themeBackgroundUrl?: string;
+
+  @IsOptional()
   @IsObject()
   @ValidateNested()
   @Type(() => Object)
