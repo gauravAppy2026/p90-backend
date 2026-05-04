@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   GamificationRule,
@@ -20,17 +21,20 @@ import {
   UserProgress,
   UserProgressSchema,
 } from '../program/schemas/user-progress.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { GamificationService } from './gamification.service';
 import { GamificationController } from './gamification.controller';
 
 @Module({
   imports: [
+    ConfigModule,
     MongooseModule.forFeature([
       { name: GamificationRule.name, schema: GamificationRuleSchema },
       { name: RedemptionOption.name, schema: RedemptionOptionSchema },
       { name: Redemption.name, schema: RedemptionSchema },
       { name: TokenLedger.name, schema: TokenLedgerSchema },
       { name: UserProgress.name, schema: UserProgressSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   providers: [GamificationService],

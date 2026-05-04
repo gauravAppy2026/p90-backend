@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -25,6 +27,7 @@ import {
   UserProgress,
   UserProgressDocument,
 } from '../program/schemas/user-progress.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 // Default token rates seeded on first boot if no rules exist yet.
 // Admins can edit afterwards via the admin endpoints.
@@ -74,12 +77,16 @@ const DEFAULT_REDEMPTIONS = [
 
 @Injectable()
 export class GamificationService implements OnModuleInit {
+  private readonly logger = new Logger(GamificationService.name);
+
   constructor(
     @InjectModel(GamificationRule.name) private rules: Model<GamificationRuleDocument>,
     @InjectModel(RedemptionOption.name) private options: Model<RedemptionOptionDocument>,
     @InjectModel(Redemption.name) private redemptions: Model<RedemptionDocument>,
     @InjectModel(TokenLedger.name) private ledger: Model<TokenLedgerDocument>,
     @InjectModel(UserProgress.name) private progress: Model<UserProgressDocument>,
+    @InjectModel(User.name) private users: Model<UserDocument>,
+    private configService: ConfigService,
   ) {}
 
   async onModuleInit() {
@@ -264,7 +271,77 @@ export class GamificationService implements OnModuleInit {
       });
     }
 
+    // Notify the user. Best-effort — a Brevo failure must not roll back
+    // the fulfillment that already happened in MongoDB.
+    this.sendRedemptionEmail(redemption).catch((err) => {
+      this.logger.error('Failed to send redemption notification email', err);
+    });
+
     return redemption;
+  }
+
+  private async sendRedemptionEmail(redemption: RedemptionDocument): Promise<void> {
+    const user = await this.users.findById(redemption.userId).select('email name');
+    if (!user?.email) return;
+
+    const apiKey = this.configService.get<string>('BREVO_API_KEY');
+    const senderEmail = this.configService.get<string>('BREVO_SMTP_USER') || 'noreply@p90app.com';
+    if (!apiKey) {
+      this.logger.log(`[Redemption notify] ${user.email}: ${redemption.optionTitle} → ${redemption.status}`);
+      return;
+    }
+
+    const isFulfilled = redemption.status === 'fulfilled';
+    const subject = isFulfilled
+      ? `Your reward "${redemption.optionTitle}" has been fulfilled`
+      : `Your redemption "${redemption.optionTitle}" was cancelled`;
+
+    const headline = isFulfilled ? 'Reward fulfilled' : 'Redemption cancelled';
+    const body = isFulfilled
+      ? `Your <strong>${redemption.optionTitle}</strong> redemption is complete. Thank you for being part of The Living Food Mission community.`
+      : `Your <strong>${redemption.optionTitle}</strong> redemption was cancelled. Your <strong>${redemption.tokensSpent.toLocaleString()} tokens</strong> have been refunded to your balance.`;
+
+    const notesBlock = redemption.notes
+      ? `<div style="background: #f5f5f4; border-radius: 12px; padding: 16px 20px; margin: 24px 0; color: #44403c; font-size: 14px; line-height: 1.6;">${redemption.notes}</div>`
+      : '';
+
+    const html = `
+      <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="width: 56px; height: 56px; background: #4a8055; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;">
+            <span style="font-size: 28px; color: white;">${isFulfilled ? '🎁' : '↺'}</span>
+          </div>
+          <h2 style="color: #292524; margin: 16px 0 4px;">${headline}</h2>
+          <p style="color: #78716c; font-size: 14px;">The 30-Day Recharge</p>
+        </div>
+        <p style="color: #44403c; font-size: 15px; line-height: 1.6;">Hi ${user.name || 'there'},</p>
+        <p style="color: #44403c; font-size: 15px; line-height: 1.6;">${body}</p>
+        ${notesBlock}
+        <p style="color: #78716c; font-size: 13px; line-height: 1.5; margin-top: 32px;">
+          Questions? Reply to this email and we'll help you out.
+        </p>
+      </div>
+    `;
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: 'The Living Food Mission', email: senderEmail },
+        to: [{ email: user.email, name: user.name }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      this.logger.error(`Brevo API error ${response.status}: ${errBody}`);
+    }
   }
 
   // --- Balance + history --------------------------------------------------

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { GamificationService } from './gamification.service';
 import { GamificationRule } from './schemas/gamification-rule.schema';
@@ -7,6 +8,7 @@ import { RedemptionOption } from './schemas/redemption-option.schema';
 import { Redemption } from './schemas/redemption.schema';
 import { TokenLedger } from './schemas/token-ledger.schema';
 import { UserProgress } from '../program/schemas/user-progress.schema';
+import { User } from '../users/schemas/user.schema';
 
 describe('GamificationService', () => {
   let service: GamificationService;
@@ -15,6 +17,8 @@ describe('GamificationService', () => {
   let redemptions: any;
   let ledger: any;
   let progress: any;
+  let users: any;
+  let config: any;
 
   beforeEach(async () => {
     rules = {
@@ -54,6 +58,10 @@ describe('GamificationService', () => {
       findOneAndUpdate: jest.fn(),
       updateOne: jest.fn(),
     };
+    users = {
+      findById: jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue(null) }),
+    };
+    config = { get: jest.fn().mockReturnValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -63,6 +71,8 @@ describe('GamificationService', () => {
         { provide: getModelToken(Redemption.name), useValue: redemptions },
         { provide: getModelToken(TokenLedger.name), useValue: ledger },
         { provide: getModelToken(UserProgress.name), useValue: progress },
+        { provide: getModelToken(User.name), useValue: users },
+        { provide: ConfigService, useValue: config },
       ],
     }).compile();
 
