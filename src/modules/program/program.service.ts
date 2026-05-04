@@ -24,8 +24,15 @@ export class ProgramService {
   // --- User Progress ---
 
   async getProgress(userId: string, timezone?: string) {
-    const progress = await this.progressModel.findOne({ userId: new Types.ObjectId(userId) });
-    if (!progress) return null;
+    const [progress, hasActivePurchase] = await Promise.all([
+      this.progressModel.findOne({ userId: new Types.ObjectId(userId) }),
+      this.subscriptions.hasActiveProgramAccess(userId),
+    ]);
+
+    // Even users with no progress doc yet get a `hasActivePurchase` so
+    // the mobile dashboard can decide whether to show "Unlock" vs
+    // "Start Program" without a second round trip.
+    if (!progress) return { hasActivePurchase };
 
     const today = getLocalDate(timezone);
     const canCompleteLesson = progress.lastLessonCompletedDate !== today;
@@ -33,6 +40,7 @@ export class ProgramService {
     return {
       ...progress.toObject(),
       canCompleteLesson,
+      hasActivePurchase,
     };
   }
 

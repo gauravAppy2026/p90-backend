@@ -129,6 +129,18 @@ export class SubscriptionsService {
     return !!found;
   }
 
+  // True if the user can access 30-day program content. Both products
+  // grant access: '30-day-recharge' (IAP) and 'all-in' (code redemption,
+  // since All-In bundles the 30-day program plus the consultation).
+  async hasActiveProgramAccess(userId: string): Promise<boolean> {
+    const found = await this.purchases.findOne({
+      userId: new Types.ObjectId(userId),
+      product: { $in: ['30-day-recharge', 'all-in'] },
+      status: 'active',
+    });
+    return !!found;
+  }
+
   async listPurchases(userId: string): Promise<PurchaseRecordDocument[]> {
     return this.purchases
       .find({ userId: new Types.ObjectId(userId) })
