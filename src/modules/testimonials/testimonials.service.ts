@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import {
   Testimonial,
   TestimonialDocument,
+  TestimonialStatus,
 } from './schemas/testimonial.schema';
 
 @Injectable()
@@ -20,13 +21,13 @@ export class TestimonialsService {
     return this.testimonialModel.create({
       ...data,
       userId: new Types.ObjectId(userId),
-      status: 'pending',
+      status: TestimonialStatus.PENDING,
     });
   }
 
   async getApproved(): Promise<TestimonialDocument[]> {
     return this.testimonialModel
-      .find({ status: 'approved' })
+      .find({ status: TestimonialStatus.APPROVED })
       .populate('userId', 'name')
       .sort({ createdAt: -1 });
   }

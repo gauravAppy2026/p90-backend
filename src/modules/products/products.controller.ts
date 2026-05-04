@@ -14,6 +14,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ProductsService } from './products.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { EventType } from '../analytics/schemas/click-event.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
@@ -49,7 +50,7 @@ export class ProductsController {
     );
     if (product) {
       await this.analyticsService.trackClick(userId, {
-        eventType: 'product_click',
+        eventType: EventType.PRODUCT_CLICK,
         targetId: id,
         targetUrl: product.affiliateUrl,
       });

@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Question, QuestionDocument } from './schemas/question.schema';
+import {
+  Question,
+  QuestionDocument,
+  QuestionStatus,
+} from './schemas/question.schema';
 
 @Injectable()
 export class QuestionsService {
@@ -14,13 +18,16 @@ export class QuestionsService {
     return this.questionModel.create({
       ...data,
       userId: new Types.ObjectId(userId),
-      status: 'pending',
+      status: QuestionStatus.PENDING,
     });
   }
 
   async getPublicFaqs(): Promise<QuestionDocument[]> {
     return this.questionModel
-      .find({ isPublic: true, status: { $in: ['answered', 'archived'] } })
+      .find({
+        isPublic: true,
+        status: { $in: [QuestionStatus.ANSWERED, QuestionStatus.ARCHIVED] },
+      })
       .sort({ createdAt: -1 });
   }
 
@@ -63,7 +70,7 @@ export class QuestionsService {
     if (!question) throw new NotFoundException('Question not found');
 
     question.answer = data.answer;
-    question.status = 'answered' as any;
+    question.status = QuestionStatus.ANSWERED;
     question.isPublic = data.isPublic || false;
     question.answeredBy = new Types.ObjectId(adminId);
     question.answeredAt = new Date();

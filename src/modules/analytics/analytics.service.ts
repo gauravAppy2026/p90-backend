@@ -1,19 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { ClickEvent, ClickEventDocument } from './schemas/click-event.schema';
+import {
+  ClickEvent,
+  ClickEventDocument,
+  EventType,
+} from './schemas/click-event.schema';
 import {
   UserProgress,
   UserProgressDocument,
 } from '../program/schemas/user-progress.schema';
-import { User, UserDocument } from '../users/schemas/user.schema';
+import { User, UserDocument, UserRole } from '../users/schemas/user.schema';
 import {
   Question,
   QuestionDocument,
+  QuestionStatus,
 } from '../questions/schemas/question.schema';
 import {
   Testimonial,
   TestimonialDocument,
+  TestimonialStatus,
 } from '../testimonials/schemas/testimonial.schema';
 
 @Injectable()
@@ -33,7 +39,7 @@ export class AnalyticsService {
 
   async trackClick(
     userId: string,
-    data: { eventType: string; targetId?: string; targetUrl?: string; metadata?: any },
+    data: { eventType: EventType; targetId?: string; targetUrl?: string; metadata?: any },
   ): Promise<ClickEventDocument> {
     return this.clickEventModel.create({
       userId: new Types.ObjectId(userId),
@@ -44,14 +50,14 @@ export class AnalyticsService {
   async getDashboardStats() {
     const totalUsers = await this.userModel.countDocuments({
       isActive: true,
-      role: 'user',
+      role: UserRole.USER,
     });
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const activeUsersThisWeek = await this.userModel.countDocuments({
       isActive: true,
-      role: 'user',
+      role: UserRole.USER,
       updatedAt: { $gte: weekAgo },
     });
 
@@ -67,10 +73,10 @@ export class AnalyticsService {
 
     const [pendingQuestions, pendingTestimonials, retreatVisits, productClicks] =
       await Promise.all([
-        this.questionModel.countDocuments({ status: 'pending' }),
-        this.testimonialModel.countDocuments({ status: 'pending' }),
-        this.clickEventModel.countDocuments({ eventType: 'retreat_visit' }),
-        this.clickEventModel.countDocuments({ eventType: 'product_click' }),
+        this.questionModel.countDocuments({ status: QuestionStatus.PENDING }),
+        this.testimonialModel.countDocuments({ status: TestimonialStatus.PENDING }),
+        this.clickEventModel.countDocuments({ eventType: EventType.RETREAT_VISIT }),
+        this.clickEventModel.countDocuments({ eventType: EventType.PRODUCT_CLICK }),
       ]);
 
     return {
@@ -140,7 +146,7 @@ export class AnalyticsService {
   async exportAnalyticsCsv() {
     const [users, progress, clicks] = await Promise.all([
       this.userModel
-        .find({ isActive: true, role: 'user' })
+        .find({ isActive: true, role: UserRole.USER })
         .select('name email createdAt'),
       this.progressModel.find(),
       this.clickEventModel.find().sort({ createdAt: -1 }).limit(1000),
