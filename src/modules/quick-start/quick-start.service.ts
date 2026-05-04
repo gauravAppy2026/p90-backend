@@ -6,7 +6,12 @@ import {
   QuickStartVideoDocument,
 } from './schemas/quick-start-video.schema';
 import {
+  QuickStartConfig,
+  QuickStartConfigDocument,
+} from './schemas/quick-start-config.schema';
+import {
   CreateQuickStartVideoDto,
+  UpdateQuickStartConfigDto,
   UpdateQuickStartVideoDto,
 } from './dto/quick-start.dto';
 
@@ -15,6 +20,8 @@ export class QuickStartService {
   constructor(
     @InjectModel(QuickStartVideo.name)
     private readonly videoModel: Model<QuickStartVideoDocument>,
+    @InjectModel(QuickStartConfig.name)
+    private readonly configModel: Model<QuickStartConfigDocument>,
   ) {}
 
   // Public — only active videos, ordered.
@@ -40,5 +47,17 @@ export class QuickStartService {
   async delete(id: string): Promise<void> {
     const deleted = await this.videoModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Video not found');
+  }
+
+  async getConfig(): Promise<QuickStartConfigDocument> {
+    let doc = await this.configModel.findOne();
+    if (!doc) doc = await this.configModel.create({});
+    return doc;
+  }
+
+  async updateConfig(dto: UpdateQuickStartConfigDto): Promise<QuickStartConfigDocument> {
+    const existing = await this.getConfig();
+    if (dto.introText !== undefined) existing.introText = dto.introText;
+    return existing.save();
   }
 }

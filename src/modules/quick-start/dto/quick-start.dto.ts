@@ -74,3 +74,10 @@ export class UpdateQuickStartVideoDto {
   @IsBoolean()
   isActive?: boolean;
 }
+
+export class UpdateQuickStartConfigDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  introText?: string;
+}

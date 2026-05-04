@@ -3,10 +3,12 @@ import { getModelToken } from '@nestjs/mongoose';
 import { NotFoundException } from '@nestjs/common';
 import { QuickStartService } from './quick-start.service';
 import { QuickStartVideo } from './schemas/quick-start-video.schema';
+import { QuickStartConfig } from './schemas/quick-start-config.schema';
 
 describe('QuickStartService', () => {
   let service: QuickStartService;
   let model: any;
+  let configModel: any;
 
   beforeEach(async () => {
     model = {
@@ -15,11 +17,16 @@ describe('QuickStartService', () => {
       findByIdAndDelete: jest.fn(),
       create: jest.fn(),
     };
+    configModel = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QuickStartService,
         { provide: getModelToken(QuickStartVideo.name), useValue: model },
+        { provide: getModelToken(QuickStartConfig.name), useValue: configModel },
       ],
     }).compile();
 
@@ -57,5 +64,21 @@ describe('QuickStartService', () => {
   it('delete throws when not found', async () => {
     model.findByIdAndDelete.mockResolvedValue(null);
     await expect(service.delete('nope')).rejects.toThrow(NotFoundException);
+  });
+
+  it('getConfig creates default doc when none exists', async () => {
+    configModel.findOne.mockResolvedValue(null);
+    configModel.create.mockResolvedValue({ introText: 'default' });
+    const r = await service.getConfig();
+    expect(configModel.create).toHaveBeenCalledWith({});
+    expect(r).toEqual({ introText: 'default' });
+  });
+
+  it('updateConfig persists introText', async () => {
+    const existing = { introText: 'old', save: jest.fn().mockResolvedValue({ introText: 'new' }) };
+    configModel.findOne.mockResolvedValue(existing);
+    await service.updateConfig({ introText: 'new' });
+    expect(existing.introText).toBe('new');
+    expect(existing.save).toHaveBeenCalled();
   });
 });

@@ -14,6 +14,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { QuickStartService } from './quick-start.service';
 import {
   CreateQuickStartVideoDto,
+  UpdateQuickStartConfigDto,
   UpdateQuickStartVideoDto,
 } from './dto/quick-start.dto';
 
@@ -25,6 +26,11 @@ export class QuickStartController {
   @Get('quick-start/videos')
   list() {
     return this.service.listActive();
+  }
+
+  @Get('quick-start/config')
+  getConfig() {
+    return this.service.getConfig();
   }
 
   @Get('admin/quick-start/videos')
@@ -53,5 +59,12 @@ export class QuickStartController {
   @Roles('admin')
   delete(@Param('id') id: string) {
     return this.service.delete(id);
+  }
+
+  @Patch('admin/quick-start/config')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  updateConfig(@Body() body: UpdateQuickStartConfigDto) {
+    return this.service.updateConfig(body);
   }
 }

@@ -4,6 +4,10 @@ import {
   QuickStartVideo,
   QuickStartVideoSchema,
 } from './schemas/quick-start-video.schema';
+import {
+  QuickStartConfig,
+  QuickStartConfigSchema,
+} from './schemas/quick-start-config.schema';
 import { QuickStartService } from './quick-start.service';
 import { QuickStartController } from './quick-start.controller';
 
@@ -11,6 +15,7 @@ import { QuickStartController } from './quick-start.controller';
   imports: [
     MongooseModule.forFeature([
       { name: QuickStartVideo.name, schema: QuickStartVideoSchema },
+      { name: QuickStartConfig.name, schema: QuickStartConfigSchema },
     ]),
   ],
   providers: [QuickStartService],

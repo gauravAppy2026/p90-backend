@@ -34,6 +34,10 @@ export interface ModuleConfig {
   badge: string;
   moreInfoUrl?: string;
   isActive: boolean;
+  // All-In landing page extras (optional, only used by the All-In module).
+  welcomeText?: string;
+  bodyText?: string;
+  calendlyUrl?: string;
 }
 
 export const SplashConfigSchema = SchemaFactory.createForClass(SplashConfig);

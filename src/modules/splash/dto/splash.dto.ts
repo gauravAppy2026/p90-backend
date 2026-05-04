@@ -28,6 +28,20 @@ export class ModuleConfigDto {
 
   @IsBoolean()
   isActive: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  welcomeText?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  bodyText?: string;
+
+  @IsOptional()
+  @IsUrl()
+  calendlyUrl?: string;
 }
 
 export class UpdateSplashConfigDto {
