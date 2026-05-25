@@ -41,6 +41,7 @@ export class SplashConfig {
     quickStart?: string;
     allInLanding?: string;
     programOverview?: string;
+    nutrition?: string;
   };
 
   @Prop({ type: Object, default: () => ({}) })

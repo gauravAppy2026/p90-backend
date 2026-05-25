@@ -83,6 +83,7 @@ export class UpdateSplashConfigDto {
     quickStart?: string;
     allInLanding?: string;
     programOverview?: string;
+    nutrition?: string;
   };
 
   @IsOptional()
