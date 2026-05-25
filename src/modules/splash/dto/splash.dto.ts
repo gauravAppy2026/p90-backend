@@ -68,6 +68,23 @@ export class UpdateSplashConfigDto {
   @IsUrl()
   themeBackgroundUrl?: string;
 
+  // Per-screen photo overrides — pass any subset of keys; admin's
+  // partial-update pattern picks them up like the modules object.
+  @IsOptional()
+  @IsObject()
+  screenBackgrounds?: {
+    dashboard?: string;
+    todayLesson?: string;
+    checklist?: string;
+    tracker?: string;
+    summary?: string;
+    resources?: string;
+    rewards?: string;
+    quickStart?: string;
+    allInLanding?: string;
+    programOverview?: string;
+  };
+
   @IsOptional()
   @IsObject()
   @ValidateNested()

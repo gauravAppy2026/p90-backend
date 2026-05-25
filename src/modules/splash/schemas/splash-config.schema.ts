@@ -20,10 +20,28 @@ export class SplashConfig {
   @Prop()
   heroImageUrl?: string;
 
-  // Fixed nature-photo background used by every screen of the mobile app
-  // (beach, field, etc.). When unset the app falls back to a sage gradient.
+  // Default nature-photo background used by any screen that doesn't
+  // have its own override (see screenBackgrounds below). Sage gradient
+  // is the fallback when this is unset too.
   @Prop()
   themeBackgroundUrl?: string;
+
+  // Per-screen background overrides — each value is an admin-uploaded
+  // R2 URL. Missing keys fall back to themeBackgroundUrl. Mobile reads
+  // these via ThemeContext / NatureBackground.
+  @Prop({ type: Object, default: () => ({}) })
+  screenBackgrounds: {
+    dashboard?: string;
+    todayLesson?: string;
+    checklist?: string;
+    tracker?: string;
+    summary?: string;
+    resources?: string;
+    rewards?: string;
+    quickStart?: string;
+    allInLanding?: string;
+    programOverview?: string;
+  };
 
   @Prop({ type: Object, default: () => ({}) })
   modules: {

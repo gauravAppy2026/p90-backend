@@ -20,6 +20,7 @@ import { GamificationModule } from './modules/gamification/gamification.module';
 import { QuickStartModule } from './modules/quick-start/quick-start.module';
 import { SaqModule } from './modules/saq/saq.module';
 import { SplashModule } from './modules/splash/splash.module';
+import { ProgramPhasesModule } from './modules/program-phases/program-phases.module';
 import { SeedModule } from './seeds/seed.module';
 import { HealthController } from './health.controller';
 
@@ -59,6 +60,7 @@ import { HealthController } from './health.controller';
     QuickStartModule,
     SaqModule,
     SplashModule,
+    ProgramPhasesModule,
     SeedModule,
   ],
   controllers: [HealthController],

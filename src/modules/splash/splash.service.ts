@@ -68,6 +68,11 @@ export class SplashService implements OnModuleInit {
     if (dto.missionStatement !== undefined) existing.missionStatement = dto.missionStatement;
     if (dto.heroImageUrl !== undefined) existing.heroImageUrl = dto.heroImageUrl;
     if (dto.themeBackgroundUrl !== undefined) existing.themeBackgroundUrl = dto.themeBackgroundUrl;
+    if (dto.screenBackgrounds) {
+      // Merge — admin sends a partial map; keep existing keys not in
+      // the payload so they can update one screen at a time.
+      existing.screenBackgrounds = { ...(existing.screenBackgrounds || {}), ...dto.screenBackgrounds };
+    }
     if (dto.modules) {
       existing.modules = { ...existing.modules, ...dto.modules };
     }
