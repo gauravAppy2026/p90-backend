@@ -176,17 +176,17 @@ export class AuthService {
             'content-type': 'application/json',
           },
           body: JSON.stringify({
-            sender: { name: 'P90 Companion', email: senderEmail },
+            sender: { name: 'NUMA', email: senderEmail },
             to: [{ email: normalizedEmail }],
-            subject: 'Your P90 Password Reset Code',
+            subject: 'Your NUMA Password Reset Code',
             htmlContent: `
               <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
                 <div style="text-align: center; margin-bottom: 32px;">
-                  <div style="width: 56px; height: 56px; background: #10b981; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;">
+                  <div style="width: 56px; height: 56px; background: #4a8055; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;">
                     <span style="font-size: 28px; color: white;">🍃</span>
                   </div>
                   <h2 style="color: #292524; margin: 16px 0 4px;">Password Reset</h2>
-                  <p style="color: #78716c; font-size: 14px;">P90 Companion</p>
+                  <p style="color: #78716c; font-size: 14px;">NUMA</p>
                 </div>
                 <p style="color: #44403c; font-size: 15px; line-height: 1.6;">
                   You requested a password reset. Use the code below to reset your password. This code expires in <strong>15 minutes</strong>.

@@ -7,10 +7,10 @@ export type SplashConfigDocument = SplashConfig & Document;
 // by the service (always upserting / reading the first record).
 @Schema({ timestamps: true })
 export class SplashConfig {
-  @Prop({ default: 'The 30-Day Recharge', maxlength: 120 })
+  @Prop({ default: 'NUMA', maxlength: 120 })
   appName: string;
 
-  @Prop({ default: 'Hosted by The Living Food Mission', maxlength: 200 })
+  @Prop({ default: '', maxlength: 200 })
   tagline: string;
 
   @Prop({ maxlength: 500, default: 'Dedicated to inspiring global change toward understanding our bodies and inspiring those around us.' })
