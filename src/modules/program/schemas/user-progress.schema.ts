@@ -38,6 +38,12 @@ export class UserProgress {
   @Prop({ default: false })
   dataOptIn: boolean; // MyOlyLife data sharing consent
 
+  // Explicit "yes, the team may contact me" — distinct from dataOptIn
+  // (anonymous data sharing). Drives the "Ok to contact?" column in the
+  // participant dashboard. Captured in onboarding opt-in.
+  @Prop({ default: false })
+  okToContact: boolean;
+
   @Prop({ default: false })
   counterIndicationsAccepted: boolean;
 

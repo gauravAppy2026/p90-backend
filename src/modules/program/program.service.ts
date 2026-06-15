@@ -48,6 +48,7 @@ export class ProgramService {
     disclaimerAccepted?: boolean;
     counterIndicationsAccepted?: boolean;
     dataOptIn?: boolean;
+    okToContact?: boolean;
     demographics?: any;
   }): Promise<UserProgressDocument> {
     const existing = await this.progressModel.findOne({
@@ -57,6 +58,7 @@ export class ProgramService {
       if (data.disclaimerAccepted !== undefined) existing.disclaimerAccepted = data.disclaimerAccepted;
       if (data.counterIndicationsAccepted !== undefined) existing.counterIndicationsAccepted = data.counterIndicationsAccepted;
       if (data.dataOptIn !== undefined) existing.dataOptIn = data.dataOptIn;
+      if (data.okToContact !== undefined) existing.okToContact = data.okToContact;
       if (data.demographics) existing.demographics = data.demographics;
       return existing.save();
     }

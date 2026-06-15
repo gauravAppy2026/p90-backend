@@ -23,6 +23,7 @@ import { SplashModule } from './modules/splash/splash.module';
 import { ProgramPhasesModule } from './modules/program-phases/program-phases.module';
 import { NutritionModule } from './modules/nutrition/nutrition.module';
 import { SupportModule } from './modules/support/support.module';
+import { ParticipantsModule } from './modules/participants/participants.module';
 import { SeedModule } from './seeds/seed.module';
 import { HealthController } from './health.controller';
 
@@ -65,6 +66,7 @@ import { HealthController } from './health.controller';
     ProgramPhasesModule,
     NutritionModule,
     SupportModule,
+    ParticipantsModule,
     SeedModule,
   ],
   controllers: [HealthController],
