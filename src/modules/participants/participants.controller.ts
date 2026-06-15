@@ -1,9 +1,20 @@
-import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParticipantsService } from './participants.service';
+import { InviteFreeAccessDto } from './dto/invite.dto';
 
 @Controller('api/admin/participants')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,5 +52,21 @@ export class ParticipantsController {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=numa-tracker-data.csv');
     res.send(csv);
+  }
+
+  // Gentle re-engagement email.
+  @Post(':userId/nudge')
+  nudge(@Param('userId') userId: string) {
+    return this.participants.sendNudge(userId);
+  }
+
+  // Mint + email a free-access unlock code to a strong tracker.
+  @Post(':userId/invite')
+  invite(
+    @CurrentUser('_id') adminId: string,
+    @Param('userId') userId: string,
+    @Body() body: InviteFreeAccessDto,
+  ) {
+    return this.participants.inviteToFreeAccess(adminId, userId, body.product);
   }
 }

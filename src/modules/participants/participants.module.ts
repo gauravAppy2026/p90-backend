@@ -9,6 +9,7 @@ import {
   DailyTracker,
   DailyTrackerSchema,
 } from '../tracker/schemas/daily-tracker.schema';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { ParticipantsService } from './participants.service';
 import { ParticipantsController } from './participants.controller';
 
@@ -19,6 +20,7 @@ import { ParticipantsController } from './participants.controller';
       { name: UserProgress.name, schema: UserProgressSchema },
       { name: DailyTracker.name, schema: DailyTrackerSchema },
     ]),
+    SubscriptionsModule,
   ],
   providers: [ParticipantsService],
   controllers: [ParticipantsController],
