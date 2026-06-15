@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsEmail,
   IsIn,
   IsInt,
   IsObject,
@@ -101,4 +102,18 @@ export class SaveResponseDto {
   @IsOptional()
   @IsBoolean()
   submitted?: boolean;
+}
+
+// Public (no-auth) web-form submission from a non-app respondent.
+export class PublicSaqSubmitDto {
+  @IsString()
+  @MaxLength(120)
+  name: string;
+
+  @IsEmail()
+  @MaxLength(200)
+  email: string;
+
+  @IsObject()
+  answers: Record<string, string>;
 }

@@ -14,10 +14,29 @@ import {
   SaqResponseDocument,
 } from './schemas/saq-response.schema';
 import {
+  SaqWebResponse,
+  SaqWebResponseDocument,
+} from './schemas/saq-web-response.schema';
+import {
   CreateSaqQuestionDto,
+  PublicSaqSubmitDto,
   SaveResponseDto,
   UpdateSaqQuestionDto,
 } from './dto/saq.dto';
+
+// Unified row the admin sees, whether the response came from an app
+// member (userId-keyed) or the public web form (email-keyed).
+export interface AdminSaqResponse {
+  _id: string;
+  source: 'app' | 'web';
+  name: string;
+  email: string;
+  detailId: string; // app: userId · web: web-response _id
+  answers: Record<string, string>;
+  submitted: boolean;
+  submittedAt?: Date;
+  updatedAt?: Date;
+}
 
 // 25 starter questions across 6 sections, derived from common functional-
 // medicine intake forms. Admin can edit/add/remove via the admin UI.
@@ -65,6 +84,8 @@ export class SaqService implements OnModuleInit {
   constructor(
     @InjectModel(SaqQuestion.name) private readonly questions: Model<SaqQuestionDocument>,
     @InjectModel(SaqResponse.name) private readonly responses: Model<SaqResponseDocument>,
+    @InjectModel(SaqWebResponse.name)
+    private readonly webResponses: Model<SaqWebResponseDocument>,
   ) {}
 
   async onModuleInit() {
@@ -97,6 +118,30 @@ export class SaqService implements OnModuleInit {
     );
   }
 
+  // --- Public web form (no auth) ---
+
+  async listActivePublic() {
+    return this.listActive();
+  }
+
+  // Upsert by email so a re-submission from the same person updates their
+  // existing record rather than creating a duplicate.
+  async submitWebResponse(dto: PublicSaqSubmitDto) {
+    await this.webResponses.findOneAndUpdate(
+      { respondentEmail: dto.email.trim().toLowerCase() },
+      {
+        $set: {
+          respondentName: dto.name.trim(),
+          answers: dto.answers || {},
+          submittedAt: new Date(),
+          source: 'web',
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+    return { success: true };
+  }
+
   // --- Admin ---
 
   async listAllQuestions() {
@@ -123,18 +168,68 @@ export class SaqService implements OnModuleInit {
     if (!deleted) throw new NotFoundException('Question not found');
   }
 
-  async listResponses() {
-    return this.responses
-      .find()
-      .sort({ submittedAt: -1, updatedAt: -1 })
-      .populate('userId', 'email name');
+  // Merged view: app-member responses + public web-form submissions,
+  // normalised to a single shape and sorted newest-first.
+  async listResponses(): Promise<AdminSaqResponse[]> {
+    const [appDocs, webDocs] = await Promise.all([
+      this.responses
+        .find()
+        .sort({ submittedAt: -1, updatedAt: -1 })
+        .populate('userId', 'email name'),
+      this.webResponses.find().sort({ submittedAt: -1, updatedAt: -1 }),
+    ]);
+
+    const rows = [
+      ...appDocs.map((d) => this.normalizeApp(d)),
+      ...webDocs.map((d) => this.normalizeWeb(d)),
+    ];
+    rows.sort((a, b) => this.rowTime(b) - this.rowTime(a));
+    return rows;
   }
 
-  async getResponse(userId: string) {
-    const response = await this.responses
-      .findOne({ userId: new Types.ObjectId(userId) })
+  async getResponse(id: string): Promise<AdminSaqResponse> {
+    const appDoc = await this.responses
+      .findOne({ userId: new Types.ObjectId(id) })
       .populate('userId', 'email name');
-    if (!response) throw new NotFoundException('No response found for that user');
-    return response;
+    if (appDoc) return this.normalizeApp(appDoc);
+
+    const webDoc = await this.webResponses.findById(id);
+    if (webDoc) return this.normalizeWeb(webDoc);
+
+    throw new NotFoundException('No response found');
+  }
+
+  private normalizeApp(d: any): AdminSaqResponse {
+    const u = d.userId && typeof d.userId === 'object' ? d.userId : null;
+    return {
+      _id: String(d._id),
+      source: 'app',
+      name: u?.name || u?.email || '—',
+      email: u?.email || '',
+      detailId: u?._id ? String(u._id) : String(d.userId || ''),
+      answers: d.answers || {},
+      submitted: !!d.submitted,
+      submittedAt: d.submittedAt,
+      updatedAt: d.updatedAt,
+    };
+  }
+
+  private normalizeWeb(d: any): AdminSaqResponse {
+    return {
+      _id: String(d._id),
+      source: 'web',
+      name: d.respondentName || '—',
+      email: d.respondentEmail || '',
+      detailId: String(d._id),
+      answers: d.answers || {},
+      submitted: true,
+      submittedAt: d.submittedAt,
+      updatedAt: d.updatedAt,
+    };
+  }
+
+  private rowTime(r: AdminSaqResponse): number {
+    const v = r.submittedAt || r.updatedAt;
+    return v ? new Date(v).getTime() : 0;
   }
 }

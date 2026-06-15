@@ -16,6 +16,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SaqService } from './saq.service';
 import {
   CreateSaqQuestionDto,
+  PublicSaqSubmitDto,
   SaveResponseDto,
   UpdateSaqQuestionDto,
 } from './dto/saq.dto';
@@ -79,10 +80,27 @@ export class SaqController {
     return this.saq.listResponses();
   }
 
-  @Get('admin/saq/responses/:userId')
+  @Get('admin/saq/responses/:id')
   @UseGuards(RolesGuard)
   @Roles('admin')
-  getResponse(@Param('userId') userId: string) {
-    return this.saq.getResponse(userId);
+  getResponse(@Param('id') id: string) {
+    return this.saq.getResponse(id);
+  }
+}
+
+// Public, no-auth endpoints powering the shareable web Self-Assessment
+// form for people who aren't app users.
+@Controller('api/public/saq')
+export class PublicSaqController {
+  constructor(private saq: SaqService) {}
+
+  @Get('questions')
+  questions() {
+    return this.saq.listActivePublic();
+  }
+
+  @Post('submit')
+  submit(@Body() body: PublicSaqSubmitDto) {
+    return this.saq.submitWebResponse(body);
   }
 }

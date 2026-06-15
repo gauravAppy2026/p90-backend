@@ -4,11 +4,13 @@ import { NotFoundException } from '@nestjs/common';
 import { SaqService } from './saq.service';
 import { SaqQuestion } from './schemas/saq-question.schema';
 import { SaqResponse } from './schemas/saq-response.schema';
+import { SaqWebResponse } from './schemas/saq-web-response.schema';
 
 describe('SaqService', () => {
   let service: SaqService;
   let questions: any;
   let responses: any;
+  let webResponses: any;
 
   beforeEach(async () => {
     questions = {
@@ -30,12 +32,19 @@ describe('SaqService', () => {
         }),
       }),
     };
+    webResponses = {
+      findOne: jest.fn().mockResolvedValue(null),
+      findById: jest.fn().mockResolvedValue(null),
+      findOneAndUpdate: jest.fn().mockResolvedValue({}),
+      find: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue([]) }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SaqService,
         { provide: getModelToken(SaqQuestion.name), useValue: questions },
         { provide: getModelToken(SaqResponse.name), useValue: responses },
+        { provide: getModelToken(SaqWebResponse.name), useValue: webResponses },
       ],
     }).compile();
 
@@ -97,6 +106,38 @@ describe('SaqService', () => {
     responses.findOne.mockReturnValue({
       populate: jest.fn().mockResolvedValue(null),
     });
+    webResponses.findById.mockResolvedValue(null);
     await expect(service.getResponse('507f1f77bcf86cd799439011')).rejects.toThrow(NotFoundException);
+  });
+
+  it('submitWebResponse upserts by normalised email and stamps submittedAt', async () => {
+    await service.submitWebResponse({
+      name: '  Jane Doe  ',
+      email: 'Jane@Example.COM',
+      answers: { q1: 'A' },
+    });
+    const [filter, update] = webResponses.findOneAndUpdate.mock.calls[0];
+    expect(filter).toEqual({ respondentEmail: 'jane@example.com' });
+    expect(update.$set.respondentName).toBe('Jane Doe');
+    expect(update.$set.answers).toEqual({ q1: 'A' });
+    expect(update.$set.submittedAt).toBeInstanceOf(Date);
+    expect(update.$set.source).toBe('web');
+  });
+
+  it('getResponse falls back to a web response when no app response exists', async () => {
+    responses.findOne.mockReturnValue({
+      populate: jest.fn().mockResolvedValue(null),
+    });
+    webResponses.findById.mockResolvedValue({
+      _id: 'web1',
+      respondentName: 'Web Person',
+      respondentEmail: 'web@example.com',
+      answers: { q1: 'B' },
+      submittedAt: new Date(),
+    });
+    const res = await service.getResponse('507f1f77bcf86cd799439011');
+    expect(res.source).toBe('web');
+    expect(res.name).toBe('Web Person');
+    expect(res.detailId).toBe('web1');
   });
 });
