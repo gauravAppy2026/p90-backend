@@ -5,6 +5,7 @@ import {
   Question,
   QuestionDocument,
   QuestionStatus,
+  QuestionCategory,
 } from './schemas/question.schema';
 
 @Injectable()
@@ -64,7 +65,7 @@ export class QuestionsService {
   async answer(
     id: string,
     adminId: string,
-    data: { answer: string; isPublic?: boolean },
+    data: { answer: string; isPublic?: boolean; category?: QuestionCategory },
   ): Promise<QuestionDocument> {
     const question = await this.questionModel.findById(id);
     if (!question) throw new NotFoundException('Question not found');
@@ -72,6 +73,7 @@ export class QuestionsService {
     question.answer = data.answer;
     question.status = QuestionStatus.ANSWERED;
     question.isPublic = data.isPublic || false;
+    if (data.category) question.category = data.category;
     question.answeredBy = new Types.ObjectId(adminId);
     question.answeredAt = new Date();
 
