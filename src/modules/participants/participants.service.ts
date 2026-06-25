@@ -275,7 +275,7 @@ export class ParticipantsService {
 
     const firstName = (user.name || 'there').split(' ')[0];
     const productLabel =
-      product === 'all-in' ? 'the All-In experience' : 'the 30-Day Recharge program';
+      product === 'all-in' ? 'the NUMA Plus experience' : 'the 30-Day Recharge program';
     const html = wrapEmail(`
       <h2 style="color:#292524;margin:0 0 12px;">A gift for you, ${esc(firstName)} 🎁</h2>
       <p style="color:#44403c;font-size:15px;line-height:1.6;margin:0 0 16px;">

@@ -58,7 +58,7 @@ export interface ModuleConfig {
   badge: string;
   moreInfoUrl?: string;
   isActive: boolean;
-  // All-In landing page extras (optional, only used by the All-In module).
+  // NUMA Plus landing page extras (optional, only used by the NUMA Plus module).
   welcomeText?: string;
   bodyText?: string;
   calendlyUrl?: string;

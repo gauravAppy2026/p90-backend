@@ -49,7 +49,7 @@ const DEFAULT_QUESTIONS: Array<Omit<SaqQuestion, 'audience'> & { order: number }
   { section: 'Goals & Vision', order: 2, type: 'long-text', text: 'What does "feeling great" look like for you?', placeholder: 'Describe a typical day at your best.', required: true, options: [], helpText: '', isActive: true },
   { section: 'Goals & Vision', order: 3, type: 'long-text', text: 'What is the biggest concern that brought you to this program?', required: true, options: [], helpText: '', placeholder: '', isActive: true },
   { section: 'Goals & Vision', order: 4, type: 'long-text', text: 'Where do you want to be one year from now?', required: false, options: [], helpText: '', placeholder: '', isActive: true },
-  { section: 'Goals & Vision', order: 5, type: 'long-text', text: "What motivated you to choose the All-In program?", required: false, options: [], helpText: '', placeholder: '', isActive: true },
+  { section: 'Goals & Vision', order: 5, type: 'long-text', text: "What motivated you to choose the NUMA Plus program?", required: false, options: [], helpText: '', placeholder: '', isActive: true },
 
   // Diet
   { section: 'Diet & Nutrition', order: 10, type: 'dropdown', text: 'Which best describes your current diet?', options: ['Omnivore', 'Vegetarian', 'Vegan', 'Pescatarian', 'Keto / Low-carb', 'Raw / Living foods', 'Other'], required: true, helpText: '', placeholder: '', isActive: true },

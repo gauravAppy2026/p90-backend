@@ -24,14 +24,14 @@ const DEFAULT_MODULES: SplashConfig['modules'] = {
     isActive: true,
   },
   allIn: {
-    title: 'All-In Package',
+    title: 'NUMA Plus',
     description:
       'Everything in the 30-Day Recharge plus private consultation, herbal protocol, weekly Zoom, and retreat discounts.',
     badge: 'ALL-IN',
     moreInfoUrl: 'https://livingfoodmission.org/services',
     isActive: true,
     welcomeText:
-      'Welcome to All-In. You now have access to a 2.5-hour private video consultation, a 16-week personalized food and herbal protocol, weekly Zoom group calls, and a 25% retreat discount.',
+      'Welcome to NUMA Plus. You now have access to a 2.5-hour private video consultation, a 16-week personalized food and herbal protocol, weekly Zoom group calls, and a 25% retreat discount.',
     bodyText:
       'Your next step is to schedule the private video consultation. The consultant will review your completed Self-Assessment Questionnaire and walk you through your personalized protocol. After that, you’ll be added to the weekly Zoom call schedule and given access to recorded living-foods cooking classes.',
   },

@@ -14,8 +14,8 @@ export const QUESTION_TYPES = [
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
 // Admin-editable Self-Assessment Questionnaire master list. Mobile users
-// (All-In members) see active questions in section/order, fill them in
-// before the All-In consultation.
+// (NUMA Plus members) see active questions in section/order, fill them in
+// before the NUMA Plus consultation.
 @Schema({ timestamps: true })
 export class SaqQuestion {
   @Prop({ required: true })
