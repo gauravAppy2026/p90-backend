@@ -5,6 +5,7 @@ import { SaqService } from './saq.service';
 import { SaqQuestion } from './schemas/saq-question.schema';
 import { SaqResponse } from './schemas/saq-response.schema';
 import { SaqWebResponse } from './schemas/saq-web-response.schema';
+import { CLINICAL_SAQ_QUESTIONS } from './clinical-saq.seed';
 
 describe('SaqService', () => {
   let service: SaqService;
@@ -122,6 +123,44 @@ describe('SaqService', () => {
     expect(update.$set.answers).toEqual({ q1: 'A' });
     expect(update.$set.submittedAt).toBeInstanceOf(Date);
     expect(update.$set.source).toBe('web');
+  });
+
+  it('clinical seed is a large, fully audience-tagged set', () => {
+    expect(CLINICAL_SAQ_QUESTIONS.length).toBeGreaterThan(100);
+    expect(CLINICAL_SAQ_QUESTIONS.every((q) => q.audience === 'clinical')).toBe(true);
+    expect(CLINICAL_SAQ_QUESTIONS.every((q) => q.text && q.section)).toBe(true);
+  });
+
+  it('listActive("clinical") filters to the clinical audience', async () => {
+    await service.listActive('clinical');
+    expect(questions.find).toHaveBeenCalledWith({ isActive: true, audience: 'clinical' });
+  });
+
+  it('listActive() defaults to basic (excludes clinical)', async () => {
+    await service.listActive();
+    expect(questions.find).toHaveBeenCalledWith({ isActive: true, audience: { $ne: 'clinical' } });
+  });
+
+  it('listResponses filters by an exact answer when questionId + value given', async () => {
+    await service.listResponses({ questionId: 'q9', value: 'Current' });
+    expect(responses.find).toHaveBeenCalledWith({ 'answers.q9': 'Current' });
+    expect(webResponses.find).toHaveBeenCalledWith({ 'answers.q9': 'Current' });
+  });
+
+  it('listResponses matches any non-empty answer when only questionId given', async () => {
+    await service.listResponses({ questionId: 'q9' });
+    expect(responses.find).toHaveBeenCalledWith({
+      'answers.q9': { $exists: true, $nin: ['', null] },
+    });
+  });
+
+  it('seeds the clinical set when none exist', async () => {
+    questions.countDocuments.mockResolvedValueOnce(25).mockResolvedValueOnce(0);
+    await service.onModuleInit();
+    const seededSets = questions.insertMany.mock.calls.map((c: any[]) => c[0]);
+    const clinical = seededSets.find((s: any[]) => s?.[0]?.audience === 'clinical');
+    expect(clinical).toBeTruthy();
+    expect(clinical.length).toBe(CLINICAL_SAQ_QUESTIONS.length);
   });
 
   it('getResponse falls back to a web response when no app response exists', async () => {

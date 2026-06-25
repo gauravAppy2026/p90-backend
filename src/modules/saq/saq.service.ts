@@ -23,6 +23,9 @@ import {
   SaveResponseDto,
   UpdateSaqQuestionDto,
 } from './dto/saq.dto';
+import { CLINICAL_SAQ_QUESTIONS } from './clinical-saq.seed';
+
+type Audience = 'basic' | 'clinical';
 
 // Unified row the admin sees, whether the response came from an app
 // member (userId-keyed) or the public web form (email-keyed).
@@ -40,7 +43,7 @@ export interface AdminSaqResponse {
 
 // 25 starter questions across 6 sections, derived from common functional-
 // medicine intake forms. Admin can edit/add/remove via the admin UI.
-const DEFAULT_QUESTIONS: Array<Omit<SaqQuestion, never> & { order: number }> = [
+const DEFAULT_QUESTIONS: Array<Omit<SaqQuestion, 'audience'> & { order: number }> = [
   // Goals & Vision
   { section: 'Goals & Vision', order: 1, type: 'long-text', text: 'What are your top 3 health goals for the next 30 days?', placeholder: 'e.g. better sleep, more energy, less back pain', required: true, options: [], helpText: '', isActive: true },
   { section: 'Goals & Vision', order: 2, type: 'long-text', text: 'What does "feeling great" look like for you?', placeholder: 'Describe a typical day at your best.', required: true, options: [], helpText: '', isActive: true },
@@ -89,16 +92,28 @@ export class SaqService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    // Seed the basic in-app set if the collection is empty.
     const count = await this.questions.countDocuments();
     if (count === 0) {
       await this.questions.insertMany(DEFAULT_QUESTIONS as any[]);
+    }
+    // Seed the clinical (web / NUMA Plus) set if it isn't present yet.
+    const clinicalCount = await this.questions.countDocuments({ audience: 'clinical' });
+    if (clinicalCount === 0) {
+      await this.questions.insertMany(CLINICAL_SAQ_QUESTIONS as any[]);
     }
   }
 
   // --- Public (member) ---
 
-  async listActive() {
-    return this.questions.find({ isActive: true }).sort({ section: 1, order: 1 });
+  // Questions for a given form. 'basic' = the in-app check-in (the original
+  // set + anything not tagged clinical); 'clinical' = the full intake.
+  async listActive(audience: Audience = 'basic') {
+    const filter =
+      audience === 'clinical'
+        ? { isActive: true, audience: 'clinical' }
+        : { isActive: true, audience: { $ne: 'clinical' } };
+    return this.questions.find(filter).sort({ order: 1, section: 1 });
   }
 
   async getMyResponse(userId: string) {
@@ -120,8 +135,9 @@ export class SaqService implements OnModuleInit {
 
   // --- Public web form (no auth) ---
 
+  // The public web Self-Assessment serves the clinical intake.
   async listActivePublic() {
-    return this.listActive();
+    return this.listActive('clinical');
   }
 
   // Upsert by email so a re-submission from the same person updates their
@@ -145,7 +161,9 @@ export class SaqService implements OnModuleInit {
   // --- Admin ---
 
   async listAllQuestions() {
-    return this.questions.find().sort({ section: 1, order: 1 });
+    // Sort by order (basic 1–99, clinical 1000+) so numbered clinical
+    // sections stay in sequence rather than string-sorted ("10" before "2").
+    return this.questions.find().sort({ order: 1, section: 1 });
   }
 
   async createQuestion(dto: CreateSaqQuestionDto) {
@@ -169,14 +187,28 @@ export class SaqService implements OnModuleInit {
   }
 
   // Merged view: app-member responses + public web-form submissions,
-  // normalised to a single shape and sorted newest-first.
-  async listResponses(): Promise<AdminSaqResponse[]> {
+  // normalised to a single shape and sorted newest-first. Optionally
+  // filtered by a specific answer (the "searchable data" feature): pass a
+  // questionId alone to match anyone who answered it, or with a value to
+  // match an exact answer (e.g. questionId X = "Current").
+  async listResponses(
+    filter: { questionId?: string; value?: string } = {},
+  ): Promise<AdminSaqResponse[]> {
+    const query: any = {};
+    if (filter.questionId) {
+      const path = `answers.${filter.questionId}`;
+      query[path] =
+        filter.value != null && filter.value !== ''
+          ? filter.value
+          : { $exists: true, $nin: ['', null] };
+    }
+
     const [appDocs, webDocs] = await Promise.all([
       this.responses
-        .find()
+        .find(query)
         .sort({ submittedAt: -1, updatedAt: -1 })
         .populate('userId', 'email name'),
-      this.webResponses.find().sort({ submittedAt: -1, updatedAt: -1 }),
+      this.webResponses.find(query).sort({ submittedAt: -1, updatedAt: -1 }),
     ]);
 
     const rows = [
@@ -232,4 +264,45 @@ export class SaqService implements OnModuleInit {
     const v = r.submittedAt || r.updatedAt;
     return v ? new Date(v).getTime() : 0;
   }
+
+  // Research export: one row per respondent, one column per question in the
+  // given form. Only includes respondents who answered at least one question
+  // in that form, so a clinical export isn't padded with basic check-ins.
+  async exportResponsesCsv(audience: Audience = 'clinical'): Promise<string> {
+    const [questions, responses] = await Promise.all([
+      this.listActive(audience),
+      this.listResponses(),
+    ]);
+    const ids = questions.map((q) => String(q._id));
+    const idSet = new Set(ids);
+    const relevant = responses.filter((r) =>
+      Object.keys(r.answers || {}).some((k) => idSet.has(k)),
+    );
+
+    const headers = [
+      'Name',
+      'Email',
+      'Source',
+      'Submitted At',
+      ...questions.map((q) => `${q.section} — ${q.text}`),
+    ];
+    const lines = [headers.map(saqCsvCell).join(',')];
+    for (const r of relevant) {
+      const row = [
+        r.name,
+        r.email,
+        r.source,
+        r.submittedAt ? new Date(r.submittedAt).toISOString() : '',
+        ...ids.map((id) => r.answers?.[id] ?? ''),
+      ];
+      lines.push(row.map(saqCsvCell).join(','));
+    }
+    return lines.join('\n');
+  }
+}
+
+// RFC-4180-ish CSV cell escaping.
+function saqCsvCell(value: unknown): string {
+  const s = value == null ? '' : String(value);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }

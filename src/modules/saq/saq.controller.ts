@@ -7,8 +7,11 @@ import {
   Patch,
   Post,
   Put,
+  Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -28,9 +31,11 @@ export class SaqController {
 
   // --- User-facing --------------------------------------------------------
 
+  // In-app questions. Defaults to the lighter 'basic' check-in; NUMA Plus
+  // members can request the clinical intake with ?form=clinical.
   @Get('saq/questions')
-  listQuestions() {
-    return this.saq.listActive();
+  listQuestions(@Query('form') form?: string) {
+    return this.saq.listActive(form === 'clinical' ? 'clinical' : 'basic');
   }
 
   @Get('saq/my-response')
@@ -76,8 +81,22 @@ export class SaqController {
   @Get('admin/saq/responses')
   @UseGuards(RolesGuard)
   @Roles('admin')
-  listResponses() {
-    return this.saq.listResponses();
+  listResponses(
+    @Query('questionId') questionId?: string,
+    @Query('value') value?: string,
+  ) {
+    return this.saq.listResponses({ questionId, value });
+  }
+
+  // Research export — declared before :id so "export" isn't read as an id.
+  @Get('admin/saq/responses/export/csv')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async exportResponses(@Res() res: Response, @Query('form') form?: string) {
+    const csv = await this.saq.exportResponsesCsv(form === 'basic' ? 'basic' : 'clinical');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=numa-self-assessment.csv');
+    res.send(csv);
   }
 
   @Get('admin/saq/responses/:id')

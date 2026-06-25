@@ -50,6 +50,10 @@ export class CreateSaqQuestionDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsIn(['basic', 'clinical'])
+  audience?: 'basic' | 'clinical';
 }
 
 export class UpdateSaqQuestionDto {
@@ -93,6 +97,10 @@ export class UpdateSaqQuestionDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsIn(['basic', 'clinical'])
+  audience?: 'basic' | 'clinical';
 }
 
 export class SaveResponseDto {

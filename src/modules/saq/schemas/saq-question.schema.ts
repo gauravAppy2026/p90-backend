@@ -46,7 +46,14 @@ export class SaqQuestion {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  // Which form this question belongs to. 'basic' = the lighter in-app
+  // check-in (the original set); 'clinical' = the full functional-medicine
+  // intake used by the public web form + NUMA Plus intake. Existing
+  // documents without this field are treated as 'basic'.
+  @Prop({ type: String, default: 'basic', enum: ['basic', 'clinical'] })
+  audience: 'basic' | 'clinical';
 }
 
 export const SaqQuestionSchema = SchemaFactory.createForClass(SaqQuestion);
-SaqQuestionSchema.index({ isActive: 1, section: 1, order: 1 });
+SaqQuestionSchema.index({ isActive: 1, audience: 1, order: 1 });
